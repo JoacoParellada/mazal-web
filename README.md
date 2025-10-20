@@ -1,1 +1,1 @@
-# mazal-web
+# Mazal App
