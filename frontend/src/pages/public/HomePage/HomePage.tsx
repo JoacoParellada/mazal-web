@@ -10,11 +10,12 @@ import { Navbar } from "@/components/layout/Navbar/NavBar";
 import { PropertyCard } from "@/components/properties/PropertyCard/PropertyCard";
 
 const HomePage = () => {
-  const { properties, isLoading, fetchProperties } = usePropertiesStore();
+  const { properties, isLoading, fetchFeaturedProperties } =
+    usePropertiesStore();
 
   useEffect(() => {
-    fetchProperties({ limit: 6 });
-  }, []);
+    fetchFeaturedProperties();
+  }, [fetchFeaturedProperties]);
 
   const features = [
     {

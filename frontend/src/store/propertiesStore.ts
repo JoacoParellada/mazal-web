@@ -1,7 +1,11 @@
 import { create } from "zustand";
 
 import { propertiesAPI } from "@api/properties.api";
-import { PropertiesState, PropertyFilters, PropertyFormData } from "@/types/propierties.types";
+import {
+  PropertiesState,
+  PropertyFilters,
+  PropertyFormData,
+} from "@/types/propierties.types";
 
 export const usePropertiesStore = create<PropertiesState>((set, get) => ({
   properties: [],
@@ -93,6 +97,23 @@ export const usePropertiesStore = create<PropertiesState>((set, get) => ({
         isLoading: false,
       });
       throw error;
+    }
+  },
+
+  fetchFeaturedProperties: async () => {
+    set({ isLoading: true, error: null });
+    try {
+      const response = await propertiesAPI.getFeatured(); // usa /destacadas
+      set({
+        properties: response.data,
+        isLoading: false,
+        error: null,
+      });
+    } catch (error: any) {
+      set({
+        error: error.response?.data?.message || "Error al cargar destacadas",
+        isLoading: false,
+      });
     }
   },
 
