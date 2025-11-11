@@ -116,6 +116,7 @@ export interface PropertiesState {
     data: Partial<PropertyFormData>
   ) => Promise<void>;
   deleteProperty: (id: string) => Promise<void>;
+  fetchFeaturedProperties: () => Promise<void>;
   setFilters: (filters: PropertyFilters) => void;
   clearFilters: () => void;
   clearError: () => void;
