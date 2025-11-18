@@ -4,7 +4,7 @@ import { useAuth } from "@hooks/useAuth";
 import { Button } from "@components/common/Button/Button";
 import { useState } from "react";
 import styles from "./NavBar.module.css";
-import logo from "@/assets/header_mazal.jpg";
+import logo from "@/assets/logo_header_mazal.png";
 
 export const Navbar = () => {
   const { isAuthenticated, user, logout } = useAuth();
