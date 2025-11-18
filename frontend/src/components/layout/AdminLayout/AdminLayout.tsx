@@ -9,7 +9,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "@hooks/useAuth";
 import styles from "./AdminLayout.module.css";
-import logo from "@/assets/header_mazal.jpg";
+import logo from "@/assets/mazal_logo.png";
 
 interface AdminLayoutProps {
   children: React.ReactNode;
