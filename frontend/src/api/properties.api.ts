@@ -50,6 +50,50 @@ export const propertiesAPI = {
   },
 
   create: async (data: PropertyFormData): Promise<PropertyResponse> => {
+    // Si hay archivos, enviar multipart/form-data
+    const files = (data as any).imagenes;
+    const hasFiles =
+      Array.isArray(files) && files.some((f: any) => f instanceof File);
+    if (hasFiles) {
+      const formData = new FormData();
+
+      // Función para añadir campos anidados (objetos) usando notación con puntos
+      const appendField = (key: string, value: any) => {
+        if (value === undefined || value === null) return;
+        if (Array.isArray(value)) {
+          // enviar arrays como JSON (ajusta si tu backend espera múltiples entradas)
+          formData.append(key, JSON.stringify(value));
+        } else if (
+          typeof value === "object" &&
+          !(value instanceof File) &&
+          !(value instanceof Date)
+        ) {
+          Object.entries(value).forEach(([k, v]) =>
+            appendField(`${key}.${k}`, v)
+          );
+        } else {
+          formData.append(key, String(value));
+        }
+      };
+
+      // Añadir todos los campos excepto imagenes
+      Object.entries(data).forEach(([k, v]) => {
+        if (k === "imagenes") return;
+        appendField(k, v);
+      });
+
+      // Añadir archivos (mismo nombre 'imagenes' para múltiples)
+      files.forEach((file: File) => {
+        formData.append("imagenes", file);
+      });
+
+      const response = await axiosInstance.post("/api/propiedades", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return response.data;
+    }
+
+    // Si no hay archivos, mandar JSON normal
     const response = await axiosInstance.post("/api/propiedades", data);
     return response.data;
   },
@@ -58,6 +102,48 @@ export const propertiesAPI = {
     id: string,
     data: Partial<PropertyFormData>
   ): Promise<PropertyResponse> => {
+    const files = (data as any).imagenes;
+    const hasFiles =
+      Array.isArray(files) && files.some((f: any) => f instanceof File);
+    if (hasFiles) {
+      const formData = new FormData();
+
+      const appendField = (key: string, value: any) => {
+        if (value === undefined || value === null) return;
+        if (Array.isArray(value)) {
+          formData.append(key, JSON.stringify(value));
+        } else if (
+          typeof value === "object" &&
+          !(value instanceof File) &&
+          !(value instanceof Date)
+        ) {
+          Object.entries(value).forEach(([k, v]) =>
+            appendField(`${key}.${k}`, v)
+          );
+        } else {
+          formData.append(key, String(value));
+        }
+      };
+
+      Object.entries(data).forEach(([k, v]) => {
+        if (k === "imagenes") return;
+        appendField(k, v);
+      });
+
+      files.forEach((file: File) => {
+        formData.append("imagenes", file);
+      });
+
+      const response = await axiosInstance.put(
+        `/api/propiedades/${id}`,
+        formData,
+        {
+          headers: { "Content-Type": "multipart/form-data" },
+        }
+      );
+      return response.data;
+    }
+
     const response = await axiosInstance.put(`/api/propiedades/${id}`, data);
     return response.data;
   },
