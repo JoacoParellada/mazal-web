@@ -205,6 +205,100 @@
   border-top: 1px solid var(--color-border);
 }
 
+.emptyImages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem;
+  border: 2px dashed #e5e7eb;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  text-align: center;
+  margin-top: 1rem;
+}
+
+.emptyImages svg {
+  color: #9ca3af;
+  margin-bottom: 1rem;
+}
+
+.emptyImages p {
+  margin: 0.5rem 0;
+  color: #6b7280;
+}
+
+.hint {
+  font-size: 0.875rem;
+  color: #9ca3af;
+}
+
+.cardSubtitle {
+  font-size: 0.875rem;
+  color: #6b7280;
+  margin-top: 0.5rem;
+}
+
+.uploadButton {
+  width: 100%;
+  justify-content: center;
+}
+
+.imagePreview {
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.newBadge {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+  background-color: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.principalBadge {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  background-color: #3b82f6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  z-index: 1;
+}
+
+.imageItem {
+  position: relative;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.imageActions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background-color: white;
+  flex-wrap: wrap;
+}
+
+.imagesList {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
 @media (max-width: 768px) {
   .formGrid {
     grid-template-columns: 1fr;
