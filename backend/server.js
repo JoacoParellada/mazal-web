@@ -1,6 +1,8 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import path from "path";
+import { fileURLToPath } from "url";
 import connectDB from "./config/database.js";
 import errorHandler from "./middleware/errorHandler.js";
 import propertyRoutes from "./routes/propertyRoutes.js";
@@ -8,6 +10,9 @@ import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +24,10 @@ connectDB();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Servir archivos estáticos (imágenes)
+// Las imágenes estarán disponibles en: http://localhost:5000/uploads/propiedades/nombre-imagen.jpg
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 // Normalizar posibles envoltorios de import (ej. { default: router })
 const normalizeRouter = (r) => (r && r.default ? r.default : r);

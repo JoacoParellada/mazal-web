@@ -98,6 +98,7 @@ const propertySchema = new mongoose.Schema(
     imagenes: [
       {
         url: { type: String, required: true },
+        filename: { type: String }, // Nombre del archivo en el servidor
         esPrincipal: { type: Boolean, default: false },
         orden: { type: Number, default: 0 },
       },
@@ -118,6 +119,11 @@ const propertySchema = new mongoose.Schema(
     },
     fechaPublicacion: {
       type: Date,
+    },
+    creadoPor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
   },
   {

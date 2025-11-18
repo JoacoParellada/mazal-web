@@ -10,9 +10,11 @@ import {
   destacarPropiedad,
   obtenerEstadisticas,
   obtenerDestacadas,
+  eliminarImagen,
 } from "../controllers/propertyController.js";
 import { protect, authorize } from "../middleware/auth.js";
 import validateRequest from "../middleware/validateRequest.js";
+import { upload } from "../config/multer.config.js";
 
 const router = express.Router();
 
@@ -48,7 +50,7 @@ const validacionPropiedad = [
     .withMessage("La provincia es obligatoria"),
 ];
 
-// Rutas públicas
+// Rutas públicas - IMPORTANTE: rutas específicas ANTES de rutas con parámetros
 router.get("/destacadas", obtenerDestacadas);
 router.get("/", obtenerPropiedades);
 router.get("/:id", obtenerPropiedad);
@@ -59,6 +61,7 @@ router.use(protect); // Todas las rutas siguientes requieren autenticación
 router.post(
   "/",
   authorize("agente", "supervisor", "admin"),
+  upload.array("imagenes", 10), // Máximo 10 imágenes
   validacionPropiedad,
   validateRequest,
   crearPropiedad
@@ -67,10 +70,17 @@ router.post(
 router.put(
   "/:id",
   authorize("agente", "supervisor", "admin"),
+  upload.array("imagenes", 10), // Máximo 10 imágenes
   actualizarPropiedad
 );
 
 router.delete("/:id", authorize("supervisor", "admin"), eliminarPropiedad);
+
+router.delete(
+  "/:id/imagenes/:imageId",
+  authorize("agente", "supervisor", "admin"),
+  eliminarImagen
+);
 
 router.put(
   "/:id/visibilidad",

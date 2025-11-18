@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { ArrowLeft, Plus, X } from "lucide-react";
+import { ArrowLeft, Plus, X, Upload, Image as ImageIcon } from "lucide-react";
 import { AdminLayout } from "@components/layout/AdminLayout/AdminLayout";
 import { Button } from "@components/common/Button/Button";
 import { Input } from "@components/common/Input/Input";
@@ -55,10 +55,19 @@ const propertySchema = z.object({
 
 type PropertyFormData = z.infer<typeof propertySchema>;
 
+interface ImagePreview {
+  file?: File;
+  url: string;
+  esPrincipal: boolean;
+  orden: number;
+  _id?: string; // Para imágenes existentes
+}
+
 const CreatePropertyPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const isEditMode = !!id;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const {
     currentProperty,
@@ -70,16 +79,12 @@ const CreatePropertyPage = () => {
 
   const [amenities, setAmenities] = useState<string[]>([]);
   const [amenityInput, setAmenityInput] = useState("");
-  const [images, setImages] = useState<
-    { url: string; esPrincipal: boolean; orden: number }[]
-  >([]);
-  const [imageInput, setImageInput] = useState("");
+  const [images, setImages] = useState<ImagePreview[]>([]);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    reset,
     setValue,
   } = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
@@ -133,43 +138,32 @@ const CreatePropertyPage = () => {
         setAmenities(currentProperty.amenities);
       }
       if (currentProperty.imagenes) {
-        setImages(currentProperty.imagenes);
+        setImages(
+          currentProperty.imagenes.map((img) => ({
+            url: img.url,
+            esPrincipal: img.esPrincipal,
+            orden: img.orden,
+            _id: img._id,
+          }))
+        );
       }
     }
   }, [currentProperty, isEditMode]);
 
   const onSubmit = async (data: PropertyFormData) => {
     try {
+      // Validar que haya al menos una imagen
+      if (images.length === 0) {
+        toast.error("Debes agregar al menos una imagen");
+        return;
+      }
+
       const formattedData = {
-        titulo: data.titulo,
-        descripcion: data.descripcion,
-        tipo: data.tipo,
-        operacion: data.operacion,
-        precio: data.precio,
-        moneda: data.moneda,
-        direccion: {
-          calle: data.direccion?.calle,
-          numero: data.direccion?.numero,
-          piso: data.direccion?.piso,
-          departamento: data.direccion?.departamento,
-          barrio: data.direccion?.barrio,
-          ciudad: data.direccion?.ciudad,
-          provincia: data.direccion?.provincia,
-          codigoPostal: data.direccion?.codigoPostal,
-        },
-        superficie: {
-          total: data.superficie?.total,
-          cubierta: data.superficie?.cubierta,
-        },
-        ambientes: data.ambientes,
-        dormitorios: data.dormitorios,
-        baños: data.baños,
-        cocheras: data.cocheras,
-        expensas: data.expensas,
+        ...data,
         amenities,
-        imagenes: images,
-        destacada: data.destacada,
-        visible: data.visible,
+        imagenes: images
+          .filter((img) => img.file) // Solo archivos nuevos
+          .map((img) => img.file as File),
       };
 
       if (isEditMode && id) {
@@ -198,26 +192,67 @@ const CreatePropertyPage = () => {
     setAmenities(amenities.filter((a) => a !== amenity));
   };
 
-  const addImage = () => {
-    if (imageInput.trim()) {
-      const newImage = {
-        url: imageInput.trim(),
-        esPrincipal: images.length === 0,
-        orden: images.length + 1,
-      };
-      setImages([...images, newImage]);
-      setImageInput("");
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    // Validar que no excedan 10 imágenes en total
+    if (images.length + files.length > 10) {
+      toast.error("Máximo 10 imágenes permitidas");
+      return;
+    }
+
+    const newImages: ImagePreview[] = [];
+
+    Array.from(files).forEach((file, index) => {
+      // Validar tipo de archivo
+      if (!file.type.startsWith("image/")) {
+        toast.error(`${file.name} no es una imagen válida`);
+        return;
+      }
+
+      // Validar tamaño (5MB máximo)
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error(`${file.name} excede el tamaño máximo de 5MB`);
+        return;
+      }
+
+      // Crear URL temporal para preview
+      const url = URL.createObjectURL(file);
+
+      newImages.push({
+        file,
+        url,
+        esPrincipal: images.length === 0 && index === 0,
+        orden: images.length + index + 1,
+      });
+    });
+
+    setImages([...images, ...newImages]);
+
+    // Limpiar input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
   };
 
   const removeImage = (index: number) => {
+    const imageToRemove = images[index];
+
+    // Liberar memoria de URLs temporales
+    if (imageToRemove.file) {
+      URL.revokeObjectURL(imageToRemove.url);
+    }
+
     const newImages = images.filter((_, i) => i !== index);
+
     // Reordenar
     const reorderedImages = newImages.map((img, i) => ({
       ...img,
       orden: i + 1,
-      esPrincipal: i === 0 && newImages.length > 0 ? true : img.esPrincipal,
+      esPrincipal: i === 0 ? true : img.esPrincipal,
     }));
+
     setImages(reorderedImages);
   };
 
@@ -228,6 +263,17 @@ const CreatePropertyPage = () => {
     }));
     setImages(newImages);
   };
+
+  // Limpiar URLs temporales al desmontar
+  useEffect(() => {
+    return () => {
+      images.forEach((img) => {
+        if (img.file) {
+          URL.revokeObjectURL(img.url);
+        }
+      });
+    };
+  }, []);
 
   if (isLoading && isEditMode) {
     return (
@@ -384,7 +430,7 @@ const CreatePropertyPage = () => {
                   <Input
                     label="Ciudad"
                     {...register("direccion.ciudad")}
-                    error={errors["direccion.ciudad"]?.message}
+                    error={errors.direccion?.ciudad?.message}
                     required
                   />
                 </div>
@@ -403,9 +449,9 @@ const CreatePropertyPage = () => {
                       </option>
                     ))}
                   </select>
-                  {errors["direccion.provincia"] && (
+                  {errors.direccion?.provincia && (
                     <span className={styles.error}>
-                      {errors["direccion.provincia"].message}
+                      {errors.direccion.provincia.message}
                     </span>
                   )}
                 </div>
@@ -527,42 +573,65 @@ const CreatePropertyPage = () => {
           {/* Imágenes */}
           <Card>
             <CardHeader>
-              <h2 className={styles.cardTitle}>Imágenes</h2>
+              <h2 className={styles.cardTitle}>
+                Imágenes <span className={styles.required}>*</span>
+              </h2>
+              <p className={styles.cardSubtitle}>
+                Máximo 10 imágenes. Tamaño máximo: 5MB por imagen. Formatos:
+                JPG, PNG, GIF, WEBP
+              </p>
             </CardHeader>
             <CardBody>
               <div className={styles.imagesSection}>
-                <div className={styles.imageInput}>
-                  <Input
-                    type="url"
-                    placeholder="URL de la imagen"
-                    value={imageInput}
-                    onChange={(e) => setImageInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addImage();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="primary"
-                    icon={<Plus size={20} />}
-                    onClick={addImage}
-                  >
-                    Agregar
-                  </Button>
-                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                  multiple
+                  onChange={handleFileSelect}
+                  style={{ display: "none" }}
+                />
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  icon={<Upload size={20} />}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={styles.uploadButton}
+                  disabled={images.length >= 10}
+                >
+                  {images.length === 0
+                    ? "Seleccionar imágenes"
+                    : `Agregar más imágenes (${images.length}/10)`}
+                </Button>
+
+                {images.length === 0 && (
+                  <div className={styles.emptyImages}>
+                    <ImageIcon size={48} />
+                    <p>No hay imágenes seleccionadas</p>
+                    <p className={styles.hint}>
+                      Haz clic en "Seleccionar imágenes" para agregar fotos
+                      desde tu computadora
+                    </p>
+                  </div>
+                )}
 
                 {images.length > 0 && (
                   <div className={styles.imagesList}>
                     {images.map((image, index) => (
                       <div key={index} className={styles.imageItem}>
-                        <img src={image.url} alt={`Imagen ${index + 1}`} />
+                        <img
+                          src={image.url}
+                          alt={`Imagen ${index + 1}`}
+                          className={styles.imagePreview}
+                        />
                         {image.esPrincipal && (
                           <span className={styles.principalBadge}>
                             Principal
                           </span>
+                        )}
+                        {image.file && (
+                          <span className={styles.newBadge}>Nueva</span>
                         )}
                         <div className={styles.imageActions}>
                           {!image.esPrincipal && (
@@ -621,7 +690,7 @@ const CreatePropertyPage = () => {
             >
               Cancelar
             </Button>
-            <Button type="submit" variant="primary">
+            <Button type="submit" variant="primary" disabled={isLoading}>
               {isEditMode ? "Actualizar Propiedad" : "Crear Propiedad"}
             </Button>
           </div>

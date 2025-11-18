@@ -1,66 +1,57 @@
 import Property from "../models/Property.js";
 import asyncHandler from "../utils/asyncHandler.js";
+import { deleteFile, deleteMultipleFiles } from "../config/multer.config.js";
 
 // @desc    Obtener todas las propiedades (públicas)
 // @route   GET /api/propiedades
 // @access  Public
 export const obtenerPropiedades = asyncHandler(async (req, res) => {
-  // Filtros
   let query = { visible: true };
 
-  // Filtrar por tipo
   if (req.query.tipo) {
     query.tipo = req.query.tipo;
   }
 
-  // Filtrar por operación
   if (req.query.operacion) {
     query.operacion = req.query.operacion;
   }
 
-  // Filtrar por estado
   if (req.query.estado) {
     query.estado = req.query.estado;
   } else {
-    query.estado = "disponible"; // Por defecto solo disponibles
+    query.estado = "disponible";
   }
 
-  // Filtrar por ciudad
   if (req.query.ciudad) {
     query["direccion.ciudad"] = new RegExp(req.query.ciudad, "i");
   }
 
-  // Filtrar por provincia
   if (req.query.provincia) {
     query["direccion.provincia"] = new RegExp(req.query.provincia, "i");
   }
 
-  // Filtrar por rango de precio
   if (req.query.precioMin || req.query.precioMax) {
     query.precio = {};
     if (req.query.precioMin) query.precio.$gte = Number(req.query.precioMin);
     if (req.query.precioMax) query.precio.$lte = Number(req.query.precioMax);
   }
 
-  // Filtrar por dormitorios
   if (req.query.dormitorios) {
     query.dormitorios = { $gte: Number(req.query.dormitorios) };
   }
 
-  // Paginación
   const page = parseInt(req.query.page, 10) || 1;
   const limit = parseInt(req.query.limit, 10) || 12;
   const startIndex = (page - 1) * limit;
   const endIndex = page * limit;
   const total = await Property.countDocuments(query);
 
-  // Ordenamiento
   let sort = {};
   if (req.query.sort) {
     const sortBy = req.query.sort.split(",").join(" ");
     sort = sortBy;
   } else {
-    sort = "-createdAt"; // Por defecto más recientes primero
+    sort = "-createdAt";
   }
 
   const propiedades = await Property.find(query)
@@ -68,7 +59,6 @@ export const obtenerPropiedades = asyncHandler(async (req, res) => {
     .limit(limit)
     .skip(startIndex);
 
-  // Paginación info
   const pagination = {};
 
   if (endIndex < total) {
@@ -107,7 +97,6 @@ export const obtenerPropiedad = asyncHandler(async (req, res) => {
     });
   }
 
-  // Si no es visible y no es un usuario autenticado, no mostrarla
   if (!propiedad.visible && !req.user) {
     return res.status(404).json({
       success: false,
@@ -125,8 +114,19 @@ export const obtenerPropiedad = asyncHandler(async (req, res) => {
 // @route   POST /api/propiedades
 // @access  Private (agente, supervisor, admin)
 export const crearPropiedad = asyncHandler(async (req, res) => {
-  // Agregar usuario al body
   req.body.creadoPor = req.user.id;
+
+  // Procesar las imágenes subidas
+  if (req.files && req.files.length > 0) {
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const imagenes = req.files.map((file, index) => ({
+      url: `${baseUrl}/uploads/propiedades/${file.filename}`,
+      filename: file.filename, // Guardar nombre del archivo para eliminarlo después
+      esPrincipal: index === 0, // La primera es principal
+      orden: index + 1,
+    }));
+    req.body.imagenes = imagenes;
+  }
 
   const propiedad = await Property.create(req.body);
 
@@ -150,12 +150,32 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
     });
   }
 
-  // Verificar que el usuario sea el creador o admin
   if (req.user.rol !== "admin" && req.user.rol !== "supervisor") {
     return res.status(403).json({
       success: false,
       message: "No autorizado para actualizar propiedades",
     });
+  }
+
+  // Si se suben nuevas imágenes
+  if (req.files && req.files.length > 0) {
+    // Eliminar imágenes antiguas del sistema de archivos
+    if (propiedad.imagenes && propiedad.imagenes.length > 0) {
+      const oldFilenames = propiedad.imagenes
+        .map((img) => img.filename)
+        .filter(Boolean);
+      deleteMultipleFiles(oldFilenames);
+    }
+
+    // Agregar nuevas imágenes
+    const baseUrl = `${req.protocol}://${req.get("host")}`;
+    const imagenes = req.files.map((file, index) => ({
+      url: `${baseUrl}/uploads/propiedades/${file.filename}`,
+      filename: file.filename,
+      esPrincipal: index === 0,
+      orden: index + 1,
+    }));
+    req.body.imagenes = imagenes;
   }
 
   propiedad = await Property.findByIdAndUpdate(req.params.id, req.body, {
@@ -181,6 +201,14 @@ export const eliminarPropiedad = asyncHandler(async (req, res) => {
       success: false,
       message: "Propiedad no encontrada",
     });
+  }
+
+  // Eliminar imágenes del sistema de archivos
+  if (propiedad.imagenes && propiedad.imagenes.length > 0) {
+    const filenames = propiedad.imagenes
+      .map((img) => img.filename)
+      .filter(Boolean);
+    deleteMultipleFiles(filenames);
   }
 
   await propiedad.deleteOne();
@@ -307,5 +335,43 @@ export const obtenerEstadisticas = asyncHandler(async (req, res) => {
       porTipo,
       porOperacion,
     },
+  });
+});
+
+// @desc    Eliminar una imagen específica
+// @route   DELETE /api/propiedades/:id/imagenes/:imageId
+// @access  Private
+export const eliminarImagen = asyncHandler(async (req, res) => {
+  const propiedad = await Property.findById(req.params.id);
+
+  if (!propiedad) {
+    return res.status(404).json({
+      success: false,
+      message: "Propiedad no encontrada",
+    });
+  }
+
+  const imagen = propiedad.imagenes.id(req.params.imageId);
+
+  if (!imagen) {
+    return res.status(404).json({
+      success: false,
+      message: "Imagen no encontrada",
+    });
+  }
+
+  // Eliminar del sistema de archivos
+  if (imagen.filename) {
+    deleteFile(imagen.filename);
+  }
+
+  // Eliminar del array
+  propiedad.imagenes.pull(req.params.imageId);
+  await propiedad.save();
+
+  res.json({
+    success: true,
+    message: "Imagen eliminada exitosamente",
+    data: propiedad,
   });
 });
