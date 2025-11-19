@@ -214,7 +214,7 @@ const PropertiesAdminPage = () => {
                         <span>•</span>
                         <span>{property.dormitorios} dorm</span>
                         <span>•</span>
-                        <span>{property.baños} baños</span>
+                        <span>{property.banos} baños</span>
                         {property.superficie?.total && (
                           <>
                             <span>•</span>

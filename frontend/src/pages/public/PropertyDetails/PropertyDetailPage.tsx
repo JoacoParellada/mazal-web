@@ -361,14 +361,14 @@ const PropertyDetailPage = () => {
                       </div>
                     </div>
                   )}
-                  {currentProperty.baños !== undefined && (
+                  {currentProperty.banos !== undefined && (
                     <div className={styles.feature}>
                       <div className={styles.featureIcon}>
                         <Bath size={24} />
                       </div>
                       <div className={styles.featureInfo}>
                         <span className={styles.featureValue}>
-                          {currentProperty.baños}
+                          {currentProperty.banos}
                         </span>
                         <span className={styles.featureLabel}>Baños</span>
                       </div>
