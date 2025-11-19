@@ -28,7 +28,7 @@ export interface Property {
   };
   ambientes?: number;
   dormitorios?: number;
-  baños?: number;
+  banos?: number;
   cocheras?: number;
   amenities?: string[];
   precio: number;
@@ -86,7 +86,7 @@ export interface PropertyFormData {
   };
   ambientes?: number;
   dormitorios?: number;
-  baños?: number;
+  banos?: number;
   cocheras?: number;
   amenities?: string[];
   expensas?: number;

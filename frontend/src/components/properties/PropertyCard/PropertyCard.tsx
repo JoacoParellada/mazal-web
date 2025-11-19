@@ -64,10 +64,10 @@ export const PropertyCard: React.FC<PropertyCardProps> = ({ property }) => {
               <span>{property.dormitorios}</span>
             </div>
           )}
-          {property.baños !== undefined && (
+          {property.banos !== undefined && (
             <div className={styles.feature}>
               <Bath size={18} />
-              <span>{property.baños}</span>
+              <span>{property.banos}</span>
             </div>
           )}
           {property.cocheras !== undefined && property.cocheras > 0 && (

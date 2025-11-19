@@ -46,7 +46,7 @@ const propertySchema = z.object({
     .optional(),
   ambientes: z.number().optional(),
   dormitorios: z.number().optional(),
-  baños: z.number().optional(),
+  banos: z.number().optional(),
   cocheras: z.number().optional(),
   expensas: z.number().optional(),
   destacada: z.boolean().optional(),
@@ -128,7 +128,7 @@ const CreatePropertyPage = () => {
       setValue("superficie.cubierta", currentProperty.superficie?.cubierta);
       setValue("ambientes", currentProperty.ambientes);
       setValue("dormitorios", currentProperty.dormitorios);
-      setValue("baños", currentProperty.baños);
+      setValue("banos", currentProperty.banos);
       setValue("cocheras", currentProperty.cocheras);
       setValue("expensas", currentProperty.expensas);
       setValue("destacada", currentProperty.destacada);
@@ -490,7 +490,7 @@ const CreatePropertyPage = () => {
                   <Input
                     type="number"
                     label="Baños"
-                    {...register("baños", { valueAsNumber: true })}
+                    {...register("banos", { valueAsNumber: true })}
                   />
                 </div>
                 <div>

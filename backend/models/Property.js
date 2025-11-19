@@ -66,7 +66,7 @@ const propertySchema = new mongoose.Schema(
       type: Number,
       min: [0, "Los dormitorios no pueden ser negativos"],
     },
-    baños: {
+    banos: {
       type: Number,
       min: [0, "Los baños no pueden ser negativos"],
     },
