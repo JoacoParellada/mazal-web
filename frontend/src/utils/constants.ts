@@ -51,10 +51,6 @@ export const PROVINCES = [
   "Tucumán",
 ];
 
-export const USER_ROLES = [
-  { value: "admin", label: "Administrador" },
-  { value: "supervisor", label: "Supervisor" },
-  { value: "agente", label: "Agente" },
-];
+export const USER_ROLES = [{ value: "admin", label: "Administrador" }];
 
 export const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";

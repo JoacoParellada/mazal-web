@@ -21,9 +21,6 @@ router.post(
     body("password")
       .isLength({ min: 6 })
       .withMessage("La contraseña debe tener al menos 6 caracteres"),
-    body("rol")
-      .isIn(["admin", "agente", "supervisor"])
-      .withMessage("Rol inválido"),
   ],
   validateRequest,
   registro

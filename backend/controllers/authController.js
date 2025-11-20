@@ -13,14 +13,13 @@ const generarToken = (id) => {
 // @route   POST /api/auth/registro
 // @access  Private (solo admin)
 export const registro = asyncHandler(async (req, res) => {
-  const { nombre, email, password, rol, telefono } = req.body;
+  const { nombre, email, password, telefono } = req.body;
 
-  // Crear usuario
   const usuario = await User.create({
     nombre,
     email,
     password,
-    rol,
+    rol: "admin",
     telefono,
   });
 

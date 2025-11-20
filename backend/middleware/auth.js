@@ -53,9 +53,9 @@ export const protect = asyncHandler(async (req, res, next) => {
 });
 
 // Autorización por roles
-export const authorize = (...roles) => {
+export const authorize = (..._roles) => {
   return (req, res, next) => {
-    if (!roles.includes(req.user.rol)) {
+    if (req.user.rol !== "admin") {
       return res.status(403).json({
         success: false,
         message: `El rol ${req.user.rol} no está autorizado para acceder a esta ruta`,
