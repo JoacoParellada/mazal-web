@@ -39,6 +39,26 @@ export const propertiesAPI = {
     return response.data;
   },
 
+  // Nuevo método para obtener TODAS las propiedades en el admin
+  getAllAdmin: async (
+    filters?: PropertyFilters
+  ): Promise<PropertiesResponse> => {
+    const params = new URLSearchParams();
+
+    if (filters) {
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null && value !== "") {
+          params.append(key, String(value));
+        }
+      });
+    }
+
+    const response = await axiosInstance.get(
+      `/api/propiedades/admin/todas?${params.toString()}`
+    );
+    return response.data;
+  },
+
   getFeatured: async () => {
     const { data } = await axiosInstance.get("/api/propiedades/destacadas");
     return data;
@@ -50,51 +70,66 @@ export const propertiesAPI = {
   },
 
   create: async (data: PropertyFormData): Promise<PropertyResponse> => {
-    // Si hay archivos, enviar multipart/form-data
-    const files = (data as any).imagenes;
-    const hasFiles =
-      Array.isArray(files) && files.some((f: any) => f instanceof File);
-    if (hasFiles) {
-      const formData = new FormData();
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
 
-      // Función para añadir campos anidados (objetos) usando notación con puntos
-      const appendField = (key: string, value: any) => {
-        if (value === undefined || value === null) return;
-        if (Array.isArray(value)) {
-          // enviar arrays como JSON (ajusta si tu backend espera múltiples entradas)
-          formData.append(key, JSON.stringify(value));
-        } else if (
-          typeof value === "object" &&
-          !(value instanceof File) &&
-          !(value instanceof Date)
-        ) {
-          Object.entries(value).forEach(([k, v]) =>
-            appendField(`${key}.${k}`, v)
-          );
-        } else {
-          formData.append(key, String(value));
-        }
-      };
+    // Agregar campos de texto
+    formData.append("titulo", data.titulo);
+    formData.append("descripcion", data.descripcion);
+    formData.append("tipo", data.tipo);
+    formData.append("operacion", data.operacion);
+    formData.append("precio", data.precio.toString());
+    formData.append("moneda", data.moneda || "ARS");
 
-      // Añadir todos los campos excepto imagenes
-      Object.entries(data).forEach(([k, v]) => {
-        if (k === "imagenes") return;
-        appendField(k, v);
+    // Dirección
+    if (data.direccion) {
+      Object.entries(data.direccion).forEach(([key, value]) => {
+        if (value) formData.append(`direccion[${key}]`, value);
       });
-
-      // Añadir archivos (mismo nombre 'imagenes' para múltiples)
-      files.forEach((file: File) => {
-        formData.append("imagenes", file);
-      });
-
-      const response = await axiosInstance.post("/api/propiedades", formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-      return response.data;
     }
 
-    // Si no hay archivos, mandar JSON normal
-    const response = await axiosInstance.post("/api/propiedades", data);
+    // Superficie
+    if (data.superficie?.total) {
+      formData.append("superficie[total]", data.superficie.total.toString());
+    }
+    if (data.superficie?.cubierta) {
+      formData.append(
+        "superficie[cubierta]",
+        data.superficie.cubierta.toString()
+      );
+    }
+
+    // Características numéricas
+    if (data.ambientes) formData.append("ambientes", data.ambientes.toString());
+    if (data.dormitorios)
+      formData.append("dormitorios", data.dormitorios.toString());
+    if (data.banos) formData.append("banos", data.banos.toString());
+    if (data.cocheras) formData.append("cocheras", data.cocheras.toString());
+    if (data.expensas) formData.append("expensas", data.expensas.toString());
+
+    // Amenities - CORREGIDO: enviar como JSON string
+    if (data.amenities && data.amenities.length > 0) {
+      formData.append("amenities", JSON.stringify(data.amenities));
+    }
+
+    // Imágenes (archivos)
+    if (data.imagenes && data.imagenes.length > 0) {
+      data.imagenes.forEach((imagen) => {
+        if (imagen instanceof File) {
+          formData.append("imagenes", imagen);
+        }
+      });
+    }
+
+    // Destacada y visible
+    formData.append("destacada", String(data.destacada || false));
+    formData.append("visible", String(data.visible !== false));
+
+    const response = await axiosInstance.post("/api/propiedades", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
     return response.data;
   },
 
@@ -102,54 +137,91 @@ export const propertiesAPI = {
     id: string,
     data: Partial<PropertyFormData>
   ): Promise<PropertyResponse> => {
-    const files = (data as any).imagenes;
-    const hasFiles =
-      Array.isArray(files) && files.some((f: any) => f instanceof File);
-    if (hasFiles) {
-      const formData = new FormData();
+    // Crear FormData para enviar archivos
+    const formData = new FormData();
 
-      const appendField = (key: string, value: any) => {
-        if (value === undefined || value === null) return;
-        if (Array.isArray(value)) {
-          formData.append(key, JSON.stringify(value));
-        } else if (
-          typeof value === "object" &&
-          !(value instanceof File) &&
-          !(value instanceof Date)
-        ) {
-          Object.entries(value).forEach(([k, v]) =>
-            appendField(`${key}.${k}`, v)
-          );
-        } else {
-          formData.append(key, String(value));
-        }
-      };
+    // Solo agregar campos que existen
+    if (data.titulo) formData.append("titulo", data.titulo);
+    if (data.descripcion) formData.append("descripcion", data.descripcion);
+    if (data.tipo) formData.append("tipo", data.tipo);
+    if (data.operacion) formData.append("operacion", data.operacion);
+    if (data.precio) formData.append("precio", data.precio.toString());
+    if (data.moneda) formData.append("moneda", data.moneda);
 
-      Object.entries(data).forEach(([k, v]) => {
-        if (k === "imagenes") return;
-        appendField(k, v);
+    // Dirección
+    if (data.direccion) {
+      Object.entries(data.direccion).forEach(([key, value]) => {
+        if (value) formData.append(`direccion[${key}]`, value);
       });
-
-      files.forEach((file: File) => {
-        formData.append("imagenes", file);
-      });
-
-      const response = await axiosInstance.put(
-        `/api/propiedades/${id}`,
-        formData,
-        {
-          headers: { "Content-Type": "multipart/form-data" },
-        }
-      );
-      return response.data;
     }
 
-    const response = await axiosInstance.put(`/api/propiedades/${id}`, data);
+    // Superficie
+    if (data.superficie?.total) {
+      formData.append("superficie[total]", data.superficie.total.toString());
+    }
+    if (data.superficie?.cubierta) {
+      formData.append(
+        "superficie[cubierta]",
+        data.superficie.cubierta.toString()
+      );
+    }
+
+    // Características numéricas
+    if (data.ambientes !== undefined)
+      formData.append("ambientes", data.ambientes.toString());
+    if (data.dormitorios !== undefined)
+      formData.append("dormitorios", data.dormitorios.toString());
+    if (data.banos !== undefined)
+      formData.append("banos", data.banos.toString());
+    if (data.cocheras !== undefined)
+      formData.append("cocheras", data.cocheras.toString());
+    if (data.expensas !== undefined)
+      formData.append("expensas", data.expensas.toString());
+
+    // Amenities - CORREGIDO: enviar como JSON string
+    if (data.amenities && data.amenities.length > 0) {
+      formData.append("amenities", JSON.stringify(data.amenities));
+    }
+
+    // Imágenes nuevas (archivos)
+    if (data.imagenes && data.imagenes.length > 0) {
+      data.imagenes.forEach((imagen) => {
+        if (imagen instanceof File) {
+          formData.append("imagenes", imagen);
+        }
+      });
+    }
+
+    // Destacada y visible
+    if (data.destacada !== undefined)
+      formData.append("destacada", String(data.destacada));
+    if (data.visible !== undefined)
+      formData.append("visible", String(data.visible));
+
+    const response = await axiosInstance.put(
+      `/api/propiedades/${id}`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }
+    );
     return response.data;
   },
 
   delete: async (id: string): Promise<{ success: boolean }> => {
     const response = await axiosInstance.delete(`/api/propiedades/${id}`);
+    return response.data;
+  },
+
+  deleteImage: async (
+    propertyId: string,
+    imageId: string
+  ): Promise<PropertyResponse> => {
+    const response = await axiosInstance.delete(
+      `/api/propiedades/${propertyId}/imagenes/${imageId}`
+    );
     return response.data;
   },
 

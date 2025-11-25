@@ -112,9 +112,18 @@ export const obtenerPropiedad = asyncHandler(async (req, res) => {
 
 // @desc    Crear nueva propiedad
 // @route   POST /api/propiedades
-// @access  Private (agente, supervisor, admin)
+// @access  Private (solo admin)
 export const crearPropiedad = asyncHandler(async (req, res) => {
   req.body.creadoPor = req.user.id;
+
+  // Parsear amenities si viene como string JSON
+  if (req.body.amenities && typeof req.body.amenities === "string") {
+    try {
+      req.body.amenities = JSON.parse(req.body.amenities);
+    } catch (error) {
+      req.body.amenities = [];
+    }
+  }
 
   // Procesar las imágenes subidas
   if (req.files && req.files.length > 0) {
@@ -139,7 +148,7 @@ export const crearPropiedad = asyncHandler(async (req, res) => {
 
 // @desc    Actualizar propiedad
 // @route   PUT /api/propiedades/:id
-// @access  Private
+// @access  Private (solo admin)
 export const actualizarPropiedad = asyncHandler(async (req, res) => {
   let propiedad = await Property.findById(req.params.id);
 
@@ -150,12 +159,7 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
     });
   }
 
-  if (req.user.rol !== "admin" && req.user.rol !== "supervisor") {
-    return res.status(403).json({
-      success: false,
-      message: "No autorizado para actualizar propiedades",
-    });
-  }
+  // Ya no necesitamos verificar el rol porque protect ya lo hace
 
   // Si se suben nuevas imágenes
   if (req.files && req.files.length > 0) {
@@ -192,7 +196,7 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
 
 // @desc    Eliminar propiedad
 // @route   DELETE /api/propiedades/:id
-// @access  Private (admin, supervisor)
+// @access  Private (solo admin)
 export const eliminarPropiedad = asyncHandler(async (req, res) => {
   const propiedad = await Property.findById(req.params.id);
 
@@ -247,7 +251,7 @@ export const cambiarVisibilidad = asyncHandler(async (req, res) => {
 
 // @desc    Marcar/desmarcar como destacada
 // @route   PUT /api/propiedades/:id/destacar
-// @access  Private (admin, supervisor)
+// @access  Private (solo admin)
 export const destacarPropiedad = asyncHandler(async (req, res) => {
   const propiedad = await Property.findById(req.params.id);
 
@@ -283,6 +287,106 @@ export const obtenerDestacadas = asyncHandler(async (req, res) => {
   res.json({
     success: true,
     count: propiedades.length,
+    data: propiedades,
+  });
+});
+
+// @desc    Obtener TODAS las propiedades para admin (incluye ocultas)
+// @route   GET /api/propiedades/admin/todas
+// @access  Private (solo admin)
+export const obtenerPropiedadesAdmin = asyncHandler(async (req, res) => {
+  // NO filtrar por visible - mostrar todas
+  let query = {};
+
+  // Filtrar por tipo
+  if (req.query.tipo) {
+    query.tipo = req.query.tipo;
+  }
+
+  // Filtrar por operación
+  if (req.query.operacion) {
+    query.operacion = req.query.operacion;
+  }
+
+  // Filtrar por estado
+  if (req.query.estado) {
+    query.estado = req.query.estado;
+  }
+
+  // Filtrar por ciudad
+  if (req.query.ciudad) {
+    query["direccion.ciudad"] = new RegExp(req.query.ciudad, "i");
+  }
+
+  // Filtrar por provincia
+  if (req.query.provincia) {
+    query["direccion.provincia"] = new RegExp(req.query.provincia, "i");
+  }
+
+  // Filtrar por rango de precio
+  if (req.query.precioMin || req.query.precioMax) {
+    query.precio = {};
+    if (req.query.precioMin) query.precio.$gte = Number(req.query.precioMin);
+    if (req.query.precioMax) query.precio.$lte = Number(req.query.precioMax);
+  }
+
+  // Filtrar por dormitorios
+  if (req.query.dormitorios) {
+    query.dormitorios = { $gte: Number(req.query.dormitorios) };
+  }
+
+  // Búsqueda por título
+  if (req.query.search) {
+    query.$or = [
+      { titulo: new RegExp(req.query.search, "i") },
+      { "direccion.ciudad": new RegExp(req.query.search, "i") },
+      { "direccion.provincia": new RegExp(req.query.search, "i") },
+    ];
+  }
+
+  // Paginación
+  const page = parseInt(req.query.page, 10) || 1;
+  const limit = parseInt(req.query.limit, 10) || 20;
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+  const total = await Property.countDocuments(query);
+
+  // Ordenamiento
+  let sort = {};
+  if (req.query.sort) {
+    const sortBy = req.query.sort.split(",").join(" ");
+    sort = sortBy;
+  } else {
+    sort = "-createdAt"; // Por defecto más recientes primero
+  }
+
+  const propiedades = await Property.find(query)
+    .sort(sort)
+    .limit(limit)
+    .skip(startIndex);
+
+  // Paginación info
+  const pagination = {};
+
+  if (endIndex < total) {
+    pagination.next = {
+      page: page + 1,
+      limit,
+    };
+  }
+
+  if (startIndex > 0) {
+    pagination.prev = {
+      page: page - 1,
+      limit,
+    };
+  }
+
+  res.json({
+    success: true,
+    count: propiedades.length,
+    total,
+    pagination,
     data: propiedades,
   });
 });

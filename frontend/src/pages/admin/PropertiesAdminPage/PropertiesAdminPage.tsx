@@ -100,15 +100,6 @@ const PropertiesAdminPage = () => {
         <Card>
           <CardBody>
             <div className={styles.filters}>
-              <div className={styles.searchBox}>
-                <Input
-                  type="text"
-                  placeholder="Buscar por título o ubicación..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  icon={<Search size={20} />}
-                />
-              </div>
               <select
                 className={styles.select}
                 value={filterOperacion}
