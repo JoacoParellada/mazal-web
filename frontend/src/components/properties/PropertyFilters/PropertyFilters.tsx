@@ -100,16 +100,7 @@ export const PropertyFilters: React.FC<PropertyFiltersProps> = ({
         </select>
       </div>
 
-      <div className={styles.filterGroup}>
-        <label className={styles.label}>Ciudad</label>
-        <input
-          type="text"
-          className={styles.input}
-          placeholder="Ej: Mendoza"
-          value={localFilters.ciudad || ""}
-          onChange={(e) => handleChange("ciudad", e.target.value)}
-        />
-      </div>
+      
 
       <div className={styles.filterGroup}>
         <label className={styles.label}>Precio Mínimo</label>
