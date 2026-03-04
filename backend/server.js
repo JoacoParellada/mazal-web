@@ -8,20 +8,28 @@ import errorHandler from "./middleware/errorHandler.js";
 import propertyRoutes from "./routes/propertyRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import authRoutes from "./routes/authRoutes.js";
-
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+app.use(
+  cors({
+    origin: "http://localhost:5173", // El origen de tu Frontend (Vite)
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+  }),
+);
+
+const PORT = process.env.PORT || 3000;
 
 // Conectar a la base de datos
 connectDB();
 
 // Middleware
-app.use(cors());
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -61,7 +69,7 @@ app.use((req, res) => {
 app.use(errorHandler);
 
 const server = app.listen(PORT, () =>
-  console.log(`Servidor corriendo en puerto ${PORT}`)
+  console.log(`Servidor corriendo en puerto ${PORT}`),
 );
 
 // Manejo de promesas no capturadas

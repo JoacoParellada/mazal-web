@@ -54,7 +54,9 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   // Buscar usuario (incluir password)
-  const usuario = await User.findOne({ email }).select("+password");
+  const usuario = await User.findOne({ email, eliminado: false }).select(
+    "+password",
+  );
 
   if (!usuario) {
     return res.status(401).json({
@@ -105,8 +107,7 @@ export const login = asyncHandler(async (req, res) => {
 // @route   GET /api/auth/me
 // @access  Private
 export const obtenerUsuarioActual = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.user.id);
-
+  const usuario = await User.findOne({ _id: req.user.id, eliminado: false });
   res.json({
     success: true,
     data: usuario,
@@ -117,11 +118,14 @@ export const obtenerUsuarioActual = asyncHandler(async (req, res) => {
 // @route   PUT /api/auth/actualizar-password
 // @access  Private
 export const actualizarPassword = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.user.id).select("+password");
+  const usuario = await User.findOne({
+    _id: req.user.id,
+    eliminado: false,
+  }).select("+password");
 
   // Verificar contraseña actual
   const esPasswordValida = await usuario.compararPassword(
-    req.body.passwordActual
+    req.body.passwordActual,
   );
 
   if (!esPasswordValida) {

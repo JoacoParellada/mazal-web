@@ -1,30 +1,19 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  Plus,
-  Search,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
-  Star,
-  StarOff,
-} from "lucide-react";
+import { Plus, Edit, Trash2, Eye, EyeOff, Star, StarOff } from "lucide-react";
 import { AdminLayout } from "@components/layout/AdminLayout/AdminLayout";
 import { Button } from "@components/common/Button/Button";
-import { Input } from "@components/common/Input/Input";
 import { Card, CardBody } from "@components/common/Card/Card";
 import { Modal } from "@components/common/Modal/Modal";
 import { Loader } from "@components/common/Loader/Loader";
 import { usePropertiesStore } from "@store/propertiesStore";
-import { useDebounce } from "@hooks/useDebounce";
 import { formatPrice, formatDate } from "@utils/formatters";
 import { propertiesAPI } from "@api/properties.api";
 import { toast } from "react-toastify";
 import styles from "./PropertiesAdminPage.module.css";
 
 const PropertiesAdminPage = () => {
-  const { properties, isLoading, total, fetchProperties, filters } =
+  const { properties, isLoading, total, filters, setFilters } =
     usePropertiesStore();
   const [searchTerm, setSearchTerm] = useState("");
   const [filterTipo, setFilterTipo] = useState("");
@@ -37,23 +26,42 @@ const PropertiesAdminPage = () => {
     propertyId: null,
   });
 
-  const debouncedSearch = useDebounce(searchTerm, 500);
+  const [isFetching, setIsFetching] = useState(false);
+
+  const fetchAdminProperties = useCallback(async () => {
+    try {
+      setIsFetching(true);
+      const nextFilters = {
+        tipo: filterTipo || undefined,
+        operacion: filterOperacion || undefined,
+        limit: 20,
+      };
+      const response = await propertiesAPI.getAllAdmin(nextFilters);
+      usePropertiesStore.setState({
+        properties: response.data,
+        total: response.total,
+        error: null,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Error al cargar propiedades";
+      usePropertiesStore.setState({ error: message });
+      toast.error("Error al cargar propiedades");
+    } finally {
+      setIsFetching(false);
+    }
+  }, [filterTipo, filterOperacion]);
 
   useEffect(() => {
-    fetchProperties({
-      ...filters,
-      tipo: filterTipo || undefined,
-      operacion: filterOperacion || undefined,
-      limit: 20,
-    });
-  }, [filterTipo, filterOperacion, debouncedSearch]);
+    fetchAdminProperties();
+  }, [fetchAdminProperties]);
 
   const handleToggleVisibility = async (id: string) => {
     try {
       await propertiesAPI.toggleVisibility(id);
       toast.success("Visibilidad actualizada");
-      fetchProperties(filters);
-    } catch (error) {
+      fetchAdminProperties();
+    } catch {
       toast.error("Error al actualizar visibilidad");
     }
   };
@@ -62,8 +70,8 @@ const PropertiesAdminPage = () => {
     try {
       await propertiesAPI.toggleDestacada(id);
       toast.success("Propiedad actualizada");
-      fetchProperties(filters);
-    } catch (error) {
+      fetchAdminProperties;
+    } catch {
       toast.error("Error al actualizar propiedad");
     }
   };
@@ -75,8 +83,8 @@ const PropertiesAdminPage = () => {
       await propertiesAPI.delete(deleteModal.propertyId);
       toast.success("Propiedad eliminada exitosamente");
       setDeleteModal({ isOpen: false, propertyId: null });
-      fetchProperties(filters);
-    } catch (error) {
+      fetchAdminProperties;
+    } catch {
       toast.error("Error al eliminar propiedad");
     }
   };
@@ -128,7 +136,7 @@ const PropertiesAdminPage = () => {
         </Card>
 
         {/* Lista de propiedades */}
-        {isLoading ? (
+        {isLoading || isFetching ? (
           <div className={styles.loaderContainer}>
             <Loader size="lg" />
           </div>

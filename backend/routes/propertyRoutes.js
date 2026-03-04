@@ -11,6 +11,7 @@ import {
   obtenerEstadisticas,
   obtenerDestacadas,
   eliminarImagen,
+  obtenerPropiedadesAdmin,
 } from "../controllers/propertyController.js";
 import { protect, authorize } from "../middleware/auth.js";
 import validateRequest from "../middleware/validateRequest.js";
@@ -50,54 +51,74 @@ const validacionPropiedad = [
     .withMessage("La provincia es obligatoria"),
 ];
 
-// Rutas públicas - IMPORTANTE: rutas específicas ANTES de rutas con parámetros
+// Rutas públicas (estáticas primero)
 router.get("/destacadas", obtenerDestacadas);
 router.get("/", obtenerPropiedades);
-router.get("/:id", obtenerPropiedad);
+
+// Rutas privadas (estáticas antes que dinámicas)
+router.get(
+  "/admin/todas",
+  protect,
+  authorize("agente", "supervisor", "admin"),
+  obtenerPropiedadesAdmin,
+);
+
+router.get(
+  "/stats/resumen",
+  protect,
+  authorize("supervisor", "admin"),
+  obtenerEstadisticas,
+);
 
 // Rutas privadas
 router.use(protect); // Todas las rutas siguientes requieren autenticación
 
 router.post(
   "/",
+  protect,
   authorize("agente", "supervisor", "admin"),
-  upload.array("imagenes", 10), // Máximo 10 imágenes
+  upload.array("imagenes", 10),
   validacionPropiedad,
   validateRequest,
-  crearPropiedad
+  crearPropiedad,
 );
 
 router.put(
   "/:id",
+  protect,
   authorize("agente", "supervisor", "admin"),
-  upload.array("imagenes", 10), // Máximo 10 imágenes
-  actualizarPropiedad
+  upload.array("imagenes", 10),
+  actualizarPropiedad,
 );
 
-router.delete("/:id", authorize("supervisor", "admin"), eliminarPropiedad);
+router.delete(
+  "/:id",
+  protect,
+  authorize("supervisor", "admin"),
+  eliminarPropiedad,
+);
 
 router.delete(
   "/:id/imagenes/:imageId",
+  protect,
   authorize("agente", "supervisor", "admin"),
-  eliminarImagen
+  eliminarImagen,
 );
 
 router.put(
   "/:id/visibilidad",
+  protect,
   authorize("agente", "supervisor", "admin"),
-  cambiarVisibilidad
+  cambiarVisibilidad,
 );
 
 router.put(
   "/:id/destacar",
   authorize("supervisor", "admin"),
-  destacarPropiedad
+  destacarPropiedad,
 );
 
-router.get(
-  "/stats/resumen",
-  authorize("supervisor", "admin"),
-  obtenerEstadisticas
-);
+// Ruta pública dinámica
+router.get("/:id", obtenerPropiedad);
 
 export default router;

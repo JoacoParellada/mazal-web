@@ -34,14 +34,14 @@ export const propertiesAPI = {
     }
 
     const response = await axiosInstance.get(
-      `/api/propiedades?${params.toString()}`
+      `/api/propiedades?${params.toString()}`,
     );
     return response.data;
   },
 
   // Nuevo método para obtener TODAS las propiedades en el admin
   getAllAdmin: async (
-    filters?: PropertyFilters
+    filters?: PropertyFilters,
   ): Promise<PropertiesResponse> => {
     const params = new URLSearchParams();
 
@@ -54,7 +54,7 @@ export const propertiesAPI = {
     }
 
     const response = await axiosInstance.get(
-      `/api/propiedades/admin/todas?${params.toString()}`
+      `/api/propiedades/admin/todas?${params.toString()}`,
     );
     return response.data;
   },
@@ -95,7 +95,7 @@ export const propertiesAPI = {
     if (data.superficie?.cubierta) {
       formData.append(
         "superficie[cubierta]",
-        data.superficie.cubierta.toString()
+        data.superficie.cubierta.toString(),
       );
     }
 
@@ -107,8 +107,7 @@ export const propertiesAPI = {
     if (data.cocheras) formData.append("cocheras", data.cocheras.toString());
     if (data.expensas) formData.append("expensas", data.expensas.toString());
 
-    // Amenities - CORREGIDO: enviar como JSON string
-    if (data.amenities && data.amenities.length > 0) {
+    if (data.amenities) {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 
@@ -135,7 +134,7 @@ export const propertiesAPI = {
 
   update: async (
     id: string,
-    data: Partial<PropertyFormData>
+    data: Partial<PropertyFormData>,
   ): Promise<PropertyResponse> => {
     // Crear FormData para enviar archivos
     const formData = new FormData();
@@ -162,7 +161,7 @@ export const propertiesAPI = {
     if (data.superficie?.cubierta) {
       formData.append(
         "superficie[cubierta]",
-        data.superficie.cubierta.toString()
+        data.superficie.cubierta.toString(),
       );
     }
 
@@ -178,8 +177,8 @@ export const propertiesAPI = {
     if (data.expensas !== undefined)
       formData.append("expensas", data.expensas.toString());
 
-    // Amenities - CORREGIDO: enviar como JSON string
-    if (data.amenities && data.amenities.length > 0) {
+    // Amenities
+    if (data.amenities) {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 
@@ -205,7 +204,7 @@ export const propertiesAPI = {
         headers: {
           "Content-Type": "multipart/form-data",
         },
-      }
+      },
     );
     return response.data;
   },
@@ -217,17 +216,17 @@ export const propertiesAPI = {
 
   deleteImage: async (
     propertyId: string,
-    imageId: string
+    imageId: string,
   ): Promise<PropertyResponse> => {
     const response = await axiosInstance.delete(
-      `/api/propiedades/${propertyId}/imagenes/${imageId}`
+      `/api/propiedades/${propertyId}/imagenes/${imageId}`,
     );
     return response.data;
   },
 
   toggleVisibility: async (id: string): Promise<PropertyResponse> => {
     const response = await axiosInstance.put(
-      `/api/propiedades/${id}/visibilidad`
+      `/api/propiedades/${id}/visibilidad`,
     );
     return response.data;
   },

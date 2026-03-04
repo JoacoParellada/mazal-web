@@ -117,6 +117,15 @@ const propertySchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    eliminado: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    fechaEliminacion: {
+      type: Date,
+      default: null,
+    },
     fechaPublicacion: {
       type: Date,
     },
@@ -128,7 +137,7 @@ const propertySchema = new mongoose.Schema(
   },
   {
     timestamps: true,
-  }
+  },
 );
 
 // Índices para mejorar el rendimiento de las búsquedas
@@ -136,6 +145,7 @@ propertySchema.index({ tipo: 1, operacion: 1 });
 propertySchema.index({ precio: 1 });
 propertySchema.index({ "direccion.ciudad": 1, "direccion.provincia": 1 });
 propertySchema.index({ estado: 1, visible: 1 });
+propertySchema.index({ eliminado: 1, createdAt: -1 });
 
 // Virtual para URL amigable (slug)
 propertySchema.virtual("slug").get(function () {
