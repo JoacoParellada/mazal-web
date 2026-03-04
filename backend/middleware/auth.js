@@ -27,7 +27,7 @@ export const protect = asyncHandler(async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Buscar usuario y agregarlo al request
-    req.user = await User.findById(decoded.id).select("-password");
+    req.user = await User.findOne({ _id: decoded.id, eliminado: false }).select("-password");
 
     if (!req.user) {
       return res.status(401).json({

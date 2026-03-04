@@ -107,8 +107,8 @@ export const propertiesAPI = {
     if (data.cocheras) formData.append("cocheras", data.cocheras.toString());
     if (data.expensas) formData.append("expensas", data.expensas.toString());
 
-    // Amenities - CORREGIDO: enviar como JSON string
-    if (data.amenities && data.amenities.length > 0) {
+    // Amenities
+    if (data.amenities) {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 
@@ -178,8 +178,8 @@ export const propertiesAPI = {
     if (data.expensas !== undefined)
       formData.append("expensas", data.expensas.toString());
 
-    // Amenities - CORREGIDO: enviar como JSON string
-    if (data.amenities && data.amenities.length > 0) {
+    // Amenities
+    if (data.amenities) {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 

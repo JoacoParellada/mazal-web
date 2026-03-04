@@ -6,7 +6,7 @@ import { deleteFile, deleteMultipleFiles } from "../config/multer.config.js";
 // @route   GET /api/propiedades
 // @access  Public
 export const obtenerPropiedades = asyncHandler(async (req, res) => {
-  let query = { visible: true };
+  let query = { visible: true, eliminado: false };
 
   if (req.query.tipo) {
     query.tipo = req.query.tipo;
@@ -88,7 +88,10 @@ export const obtenerPropiedades = asyncHandler(async (req, res) => {
 // @route   GET /api/propiedades/:id
 // @access  Public
 export const obtenerPropiedad = asyncHandler(async (req, res) => {
-  const propiedad = await Property.findById(req.params.id);
+  const propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
@@ -117,7 +120,7 @@ export const crearPropiedad = asyncHandler(async (req, res) => {
   req.body.creadoPor = req.user.id;
 
   // Parsear amenities si viene como string JSON
-  if (req.body.amenities && typeof req.body.amenities === "string") {
+  if (typeof req.body.amenities === "string") {
     try {
       req.body.amenities = JSON.parse(req.body.amenities);
     } catch (error) {
@@ -150,7 +153,10 @@ export const crearPropiedad = asyncHandler(async (req, res) => {
 // @route   PUT /api/propiedades/:id
 // @access  Private (solo admin)
 export const actualizarPropiedad = asyncHandler(async (req, res) => {
-  let propiedad = await Property.findById(req.params.id);
+  let propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
@@ -160,6 +166,16 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
   }
 
   // Ya no necesitamos verificar el rol porque protect ya lo hace
+
+
+  // Parsear amenities si viene como string JSON
+  if (typeof req.body.amenities === "string") {
+    try {
+      req.body.amenities = JSON.parse(req.body.amenities);
+    } catch (error) {
+      req.body.amenities = [];
+    }
+  }
 
   // Si se suben nuevas imágenes
   if (req.files && req.files.length > 0) {
@@ -182,7 +198,7 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
     req.body.imagenes = imagenes;
   }
 
-  propiedad = await Property.findByIdAndUpdate(req.params.id, req.body, {
+  propiedad = await Property.findOneAndUpdate({ _id: req.params.id, eliminado: false }, req.body, {
     new: true,
     runValidators: true,
   });
@@ -198,7 +214,10 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
 // @route   DELETE /api/propiedades/:id
 // @access  Private (solo admin)
 export const eliminarPropiedad = asyncHandler(async (req, res) => {
-  const propiedad = await Property.findById(req.params.id);
+  const propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
@@ -207,20 +226,16 @@ export const eliminarPropiedad = asyncHandler(async (req, res) => {
     });
   }
 
-  // Eliminar imágenes del sistema de archivos
-  if (propiedad.imagenes && propiedad.imagenes.length > 0) {
-    const filenames = propiedad.imagenes
-      .map((img) => img.filename)
-      .filter(Boolean);
-    deleteMultipleFiles(filenames);
-  }
-
-  await propiedad.deleteOne();
+  propiedad.eliminado = true;
+  propiedad.visible = false;
+  propiedad.destacada = false;
+  propiedad.fechaEliminacion = new Date();
+  await propiedad.save();
 
   res.json({
     success: true,
     message: "Propiedad eliminada exitosamente",
-    data: {},
+    data: propiedad,
   });
 });
 
@@ -228,7 +243,10 @@ export const eliminarPropiedad = asyncHandler(async (req, res) => {
 // @route   PUT /api/propiedades/:id/visibilidad
 // @access  Private
 export const cambiarVisibilidad = asyncHandler(async (req, res) => {
-  const propiedad = await Property.findById(req.params.id);
+  const propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
@@ -253,7 +271,10 @@ export const cambiarVisibilidad = asyncHandler(async (req, res) => {
 // @route   PUT /api/propiedades/:id/destacar
 // @access  Private (solo admin)
 export const destacarPropiedad = asyncHandler(async (req, res) => {
-  const propiedad = await Property.findById(req.params.id);
+  const propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
@@ -282,6 +303,7 @@ export const obtenerDestacadas = asyncHandler(async (req, res) => {
     visible: true,
     destacada: true,
     estado: "disponible",
+    eliminado: false,
   }).sort("-createdAt");
 
   res.json({
@@ -296,7 +318,7 @@ export const obtenerDestacadas = asyncHandler(async (req, res) => {
 // @access  Private (solo admin)
 export const obtenerPropiedadesAdmin = asyncHandler(async (req, res) => {
   // NO filtrar por visible - mostrar todas
-  let query = {};
+  let query = { eliminado: false };
 
   // Filtrar por tipo
   if (req.query.tipo) {
@@ -397,6 +419,9 @@ export const obtenerPropiedadesAdmin = asyncHandler(async (req, res) => {
 export const obtenerEstadisticas = asyncHandler(async (req, res) => {
   const stats = await Property.aggregate([
     {
+      $match: { eliminado: false },
+    },
+    {
       $group: {
         _id: null,
         totalPropiedades: { $sum: 1 },
@@ -416,6 +441,9 @@ export const obtenerEstadisticas = asyncHandler(async (req, res) => {
 
   const porTipo = await Property.aggregate([
     {
+      $match: { eliminado: false },
+    },
+    {
       $group: {
         _id: "$tipo",
         cantidad: { $sum: 1 },
@@ -424,6 +452,9 @@ export const obtenerEstadisticas = asyncHandler(async (req, res) => {
   ]);
 
   const porOperacion = await Property.aggregate([
+    {
+      $match: { eliminado: false },
+    },
     {
       $group: {
         _id: "$operacion",
@@ -446,7 +477,10 @@ export const obtenerEstadisticas = asyncHandler(async (req, res) => {
 // @route   DELETE /api/propiedades/:id/imagenes/:imageId
 // @access  Private
 export const eliminarImagen = asyncHandler(async (req, res) => {
-  const propiedad = await Property.findById(req.params.id);
+  const propiedad = await Property.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!propiedad) {
     return res.status(404).json({
