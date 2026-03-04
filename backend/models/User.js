@@ -35,6 +35,15 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    eliminado: {
+      type: Boolean,
+      default: false,
+      index: true,
+    },
+    fechaEliminacion: {
+      type: Date,
+      default: null,
+    },
     ultimoAcceso: {
       type: Date,
     },

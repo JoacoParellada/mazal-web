@@ -87,11 +87,25 @@ const DashboardPage = () => {
       link: "/admin/propiedades?estado=vendida",
     },
     {
+      title: "Alquiladas",
+      value: stats?.alquiladas || 0,
+      icon: <Home size={32} />,
+      color: "#06b6d4",
+      link: "/admin/propiedades?estado=alquilada",
+    },
+    {
       title: "Usuarios",
       value: totalUsers,
       icon: <Users size={32} />,
       color: "#8b5cf6",
       link: "/admin/usuarios",
+    },
+    {
+      title: "Precio Promedio",
+      value: `$${Math.round(stats?.precioPromedio || 0).toLocaleString("es-AR")}`,
+      icon: <DollarSign size={32} />,
+      color: "#14b8a6",
+      link: "/admin/propiedades",
     },
   ];
 

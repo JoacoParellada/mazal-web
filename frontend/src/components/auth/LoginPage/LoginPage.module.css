@@ -64,34 +64,3 @@
 .link:hover {
   color: var(--color-primary-dark);
 }
-
-.testCredentials {
-  position: absolute;
-  bottom: var(--spacing-lg);
-  left: var(--spacing-lg);
-  background-color: rgba(255, 255, 255, 0.95);
-  padding: var(--spacing-md);
-  border-radius: var(--radius-md);
-  font-size: var(--font-size-sm);
-  box-shadow: var(--shadow-md);
-}
-
-.testCredentials h3 {
-  margin: 0 0 var(--spacing-sm) 0;
-  font-size: var(--font-size-base);
-  color: var(--color-text-primary);
-}
-
-.testCredentials p {
-  margin: var(--spacing-xs) 0;
-  color: var(--color-text-secondary);
-}
-
-@media (max-width: 768px) {
-  .testCredentials {
-    position: static;
-    margin-top: var(--spacing-lg);
-    width: 100%;
-    max-width: 450px;
-  }
-}

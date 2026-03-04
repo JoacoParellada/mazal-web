@@ -84,15 +84,6 @@ const LoginPage = () => {
         </div>
       </div>
 
-      <div className={styles.testCredentials}>
-        <h3>Credenciales de prueba:</h3>
-        <p>
-          <strong>Email:</strong> admin@inmobiliaria.com
-        </p>
-        <p>
-          <strong>Password:</strong> admin123
-        </p>
-      </div>
     </div>
   );
 };

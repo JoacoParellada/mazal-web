@@ -5,7 +5,7 @@ import asyncHandler from "../utils/asyncHandler.js";
 // @route   GET /api/usuarios
 // @access  Private (admin, supervisor)
 export const obtenerUsuarios = asyncHandler(async (req, res) => {
-  const usuarios = await User.find().select("-password");
+  const usuarios = await User.find({ eliminado: false }).select("-password");
 
   res.json({
     success: true,
@@ -18,7 +18,10 @@ export const obtenerUsuarios = asyncHandler(async (req, res) => {
 // @route   GET /api/usuarios/:id
 // @access  Private (admin, supervisor)
 export const obtenerUsuario = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.params.id).select("-password");
+  const usuario = await User.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  }).select("-password");
 
   if (!usuario) {
     return res.status(404).json({
@@ -46,8 +49,8 @@ export const actualizarUsuario = asyncHandler(async (req, res) => {
     activo: req.body.activo,
   };
 
-  const usuario = await User.findByIdAndUpdate(
-    req.params.id,
+  const usuario = await User.findOneAndUpdate(
+    { _id: req.params.id, eliminado: false },
     camposPermitidos,
     {
       new: true,
@@ -73,7 +76,10 @@ export const actualizarUsuario = asyncHandler(async (req, res) => {
 // @route   PUT /api/usuarios/:id/desactivar
 // @access  Private (admin)
 export const desactivarUsuario = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.params.id);
+  const usuario = await User.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!usuario) {
     return res.status(404).json({
@@ -96,7 +102,10 @@ export const desactivarUsuario = asyncHandler(async (req, res) => {
 // @route   PUT /api/usuarios/:id/activar
 // @access  Private (admin)
 export const activarUsuario = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.params.id);
+  const usuario = await User.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!usuario) {
     return res.status(404).json({
@@ -119,7 +128,10 @@ export const activarUsuario = asyncHandler(async (req, res) => {
 // @route   DELETE /api/usuarios/:id
 // @access  Private (admin)
 export const eliminarUsuario = asyncHandler(async (req, res) => {
-  const usuario = await User.findById(req.params.id);
+  const usuario = await User.findOne({
+    _id: req.params.id,
+    eliminado: false,
+  });
 
   if (!usuario) {
     return res.status(404).json({
@@ -128,7 +140,10 @@ export const eliminarUsuario = asyncHandler(async (req, res) => {
     });
   }
 
-  await usuario.deleteOne();
+  usuario.eliminado = true;
+  usuario.activo = false;
+  usuario.fechaEliminacion = new Date();
+  await usuario.save();
 
   res.json({
     success: true,
