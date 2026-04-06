@@ -3,9 +3,8 @@ const errorHandler = (err, req, res, next) => {
   error.message = err.message;
 
   // Log para desarrollo
-  if (process.env.NODE_ENV === "development") {
-    console.error(err);
-  }
+  // Después (temporal para debuggear)
+  console.error("ERROR:", err.name, err.message, err.stack);
 
   // Error de Mongoose - ID mal formateado
   if (err.name === "CastError") {

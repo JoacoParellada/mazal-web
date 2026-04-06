@@ -18,6 +18,7 @@ import {
 } from "@utils/constants";
 import { toast } from "react-toastify";
 import styles from "./CreatePropertyPage.module.css";
+import { getFieldsConfig } from "@utils/propertyFieldsConfig";
 
 const propertySchema = z.object({
   titulo: z.string().min(5, "El título debe tener al menos 5 caracteres"),
@@ -58,6 +59,7 @@ type PropertyFormData = z.infer<typeof propertySchema>;
 interface ImagePreview {
   file?: File;
   url: string;
+  filename?: string;
   esPrincipal: boolean;
   orden: number;
   _id?: string; // Para imágenes existentes
@@ -86,6 +88,7 @@ const CreatePropertyPage = () => {
     handleSubmit,
     formState: { errors },
     setValue,
+    watch,
   } = useForm<PropertyFormData>({
     resolver: zodResolver(propertySchema),
     defaultValues: {
@@ -94,6 +97,9 @@ const CreatePropertyPage = () => {
       visible: true,
     },
   });
+
+  const tipoSeleccionado = watch("tipo") || "";
+  const fieldsConfig = getFieldsConfig(tipoSeleccionado);
 
   useEffect(() => {
     if (isEditMode && id) {
@@ -115,14 +121,14 @@ const CreatePropertyPage = () => {
       setValue("direccion.piso", currentProperty.direccion.piso);
       setValue(
         "direccion.departamento",
-        currentProperty.direccion.departamento
+        currentProperty.direccion.departamento,
       );
       setValue("direccion.barrio", currentProperty.direccion.barrio);
       setValue("direccion.ciudad", currentProperty.direccion.ciudad);
       setValue("direccion.provincia", currentProperty.direccion.provincia);
       setValue(
         "direccion.codigoPostal",
-        currentProperty.direccion.codigoPostal
+        currentProperty.direccion.codigoPostal,
       );
       setValue("superficie.total", currentProperty.superficie?.total);
       setValue("superficie.cubierta", currentProperty.superficie?.cubierta);
@@ -141,10 +147,11 @@ const CreatePropertyPage = () => {
         setImages(
           currentProperty.imagenes.map((img) => ({
             url: img.url,
+            filename: img.filename,
             esPrincipal: img.esPrincipal,
             orden: img.orden,
             _id: img._id,
-          }))
+          })),
         );
       }
     }
@@ -152,7 +159,6 @@ const CreatePropertyPage = () => {
 
   const onSubmit = async (data: PropertyFormData) => {
     try {
-      // Validar que haya al menos una imagen
       if (images.length === 0) {
         toast.error("Debes agregar al menos una imagen");
         return;
@@ -161,10 +167,30 @@ const CreatePropertyPage = () => {
       const formattedData = {
         ...data,
         amenities,
+        // ✅ Imágenes existentes (las que ya estaban guardadas)
+        imagenesExistentes: images
+          .filter((img) => !img.file)
+          .map((img, index) => ({
+            _id: img._id,
+            url: img.url,
+            filename: img.filename, // necesitás agregar filename al tipo ImagePreview
+            esPrincipal: img.esPrincipal,
+            orden: index + 1,
+          })),
+        // Solo archivos nuevos
         imagenes: images
-          .filter((img) => img.file) // Solo archivos nuevos
+          .filter((img) => img.file)
           .map((img) => img.file as File),
       };
+
+      console.log(
+        "formattedData:",
+        JSON.stringify({
+          ...formattedData,
+          imagenes: formattedData.imagenes?.length + " archivos",
+          imagenesExistentes: formattedData.imagenesExistentes,
+        }),
+      );
 
       if (isEditMode && id) {
         await updateProperty(id, formattedData);
@@ -176,7 +202,7 @@ const CreatePropertyPage = () => {
       navigate("/admin/propiedades");
     } catch (error: any) {
       toast.error(
-        error.response?.data?.message || "Error al guardar la propiedad"
+        error.response?.data?.message || "Error al guardar la propiedad",
       );
     }
   };
@@ -197,8 +223,8 @@ const CreatePropertyPage = () => {
     if (!files || files.length === 0) return;
 
     // Validar que no excedan 10 imágenes en total
-    if (images.length + files.length > 10) {
-      toast.error("Máximo 10 imágenes permitidas");
+    if (images.length + files.length > 35) {
+      toast.error("Máximo 35 imágenes permitidas");
       return;
     }
 
@@ -261,7 +287,15 @@ const CreatePropertyPage = () => {
       ...img,
       esPrincipal: i === index,
     }));
-    setImages(newImages);
+
+    const principal = newImages[index];
+    const resto = newImages.filter((_, i) => i !== index);
+    const reordenadas = [principal, ...resto].map((img, i) => ({
+      ...img,
+      orden: i + 1,
+    }));
+
+    setImages(reordenadas);
   };
 
   // Limpiar URLs temporales al desmontar
@@ -465,110 +499,162 @@ const CreatePropertyPage = () => {
             </CardBody>
           </Card>
 
-          {/* Características */}
-          <Card>
-            <CardHeader>
-              <h2 className={styles.cardTitle}>Características</h2>
-            </CardHeader>
-            <CardBody>
-              <div className={styles.formGrid}>
-                <div>
-                  <Input
-                    type="number"
-                    label="Ambientes"
-                    {...register("ambientes", { valueAsNumber: true })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                    label="Dormitorios"
-                    {...register("dormitorios", { valueAsNumber: true })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                    label="Baños"
-                    {...register("banos", { valueAsNumber: true })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                    label="Cocheras"
-                    {...register("cocheras", { valueAsNumber: true })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                    label="Superficie Total (m²)"
-                    {...register("superficie.total", { valueAsNumber: true })}
-                  />
-                </div>
-                <div>
-                  <Input
-                    type="number"
-                    label="Superficie Cubierta (m²)"
-                    {...register("superficie.cubierta", {
-                      valueAsNumber: true,
-                    })}
-                  />
-                </div>
-              </div>
-            </CardBody>
-          </Card>
-
-          {/* Amenities */}
-          <Card>
-            <CardHeader>
-              <h2 className={styles.cardTitle}>Amenities</h2>
-            </CardHeader>
-            <CardBody>
-              <div className={styles.amenitiesSection}>
-                <div className={styles.amenityInput}>
-                  <Input
-                    type="text"
-                    placeholder="Ej: Piscina, Gimnasio, Parrilla..."
-                    value={amenityInput}
-                    onChange={(e) => setAmenityInput(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        addAmenity();
-                      }
-                    }}
-                  />
-                  <Button
-                    type="button"
-                    variant="primary"
-                    icon={<Plus size={20} />}
-                    onClick={addAmenity}
-                  >
-                    Agregar
-                  </Button>
+          {/* Características — se muestran según el tipo */}
+          {tipoSeleccionado && (
+            <Card>
+              <CardHeader>
+                <h2 className={styles.cardTitle}>Características</h2>
+                <p className={styles.cardSubtitle}>
+                  Campos disponibles para{" "}
+                  <strong>
+                    {
+                      PROPERTY_TYPES.find((t) => t.value === tipoSeleccionado)
+                        ?.label
+                    }
+                  </strong>
+                </p>
+              </CardHeader>
+              <CardBody>
+                <div className={styles.formGrid}>
+                  {fieldsConfig.superficieTotal.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.superficieTotal.label}
+                        {...register("superficie.total", {
+                          valueAsNumber: true,
+                        })}
+                      />
+                    </div>
+                  )}
+                  {fieldsConfig.superficieCubierta.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.superficieCubierta.label}
+                        {...register("superficie.cubierta", {
+                          valueAsNumber: true,
+                        })}
+                      />
+                    </div>
+                  )}
+                  {fieldsConfig.ambientes.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.ambientes.label}
+                        {...register("ambientes", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                  {fieldsConfig.dormitorios.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.dormitorios.label}
+                        {...register("dormitorios", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                  {fieldsConfig.banos.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.banos.label}
+                        {...register("banos", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
+                  {fieldsConfig.cocheras.show && (
+                    <div>
+                      <Input
+                        type="number"
+                        label={fieldsConfig.cocheras.label}
+                        {...register("cocheras", { valueAsNumber: true })}
+                      />
+                    </div>
+                  )}
                 </div>
 
-                {amenities.length > 0 && (
-                  <div className={styles.amenitiesList}>
-                    {amenities.map((amenity, index) => (
-                      <div key={index} className={styles.amenityTag}>
-                        <span>{amenity}</span>
-                        <button
-                          type="button"
-                          onClick={() => removeAmenity(amenity)}
-                          className={styles.removeButton}
-                        >
-                          <X size={16} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
+                {/* Mensaje cuando no hay tipo seleccionado */}
+                {!tipoSeleccionado && (
+                  <p className={styles.hint}>
+                    Seleccioná un tipo de propiedad para ver los campos
+                    disponibles.
+                  </p>
                 )}
-              </div>
-            </CardBody>
-          </Card>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Amenities — solo si el tipo lo permite */}
+          {tipoSeleccionado && fieldsConfig.amenities.show && (
+            <Card>
+              <CardHeader>
+                <h2 className={styles.cardTitle}>
+                  {fieldsConfig.amenities.label}
+                </h2>
+              </CardHeader>
+              <CardBody>
+                <div className={styles.amenitiesSection}>
+                  <div className={styles.amenityInput}>
+                    <Input
+                      type="text"
+                      placeholder="Ej: Piscina, Gimnasio, Parrilla..."
+                      value={amenityInput}
+                      onChange={(e) => setAmenityInput(e.target.value)}
+                      onKeyPress={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          addAmenity();
+                        }
+                      }}
+                    />
+                    <Button
+                      type="button"
+                      variant="primary"
+                      icon={<Plus size={20} />}
+                      onClick={addAmenity}
+                    >
+                      Agregar
+                    </Button>
+                  </div>
+                  {amenities.length > 0 && (
+                    <div className={styles.amenitiesList}>
+                      {amenities.map((amenity, index) => (
+                        <div key={index} className={styles.amenityTag}>
+                          <span>{amenity}</span>
+                          <button
+                            type="button"
+                            onClick={() => removeAmenity(amenity)}
+                            className={styles.removeButton}
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Mensaje cuando no hay tipo seleccionado */}
+          {!tipoSeleccionado && (
+            <Card>
+              <CardBody>
+                <div className={styles.emptyImages} style={{ padding: "2rem" }}>
+                  <p
+                    style={{ margin: 0, color: "var(--color-text-secondary)" }}
+                  >
+                    👆 Seleccioná primero el <strong>tipo de propiedad</strong>{" "}
+                    para ver las características disponibles.
+                  </p>
+                </div>
+              </CardBody>
+            </Card>
+          )}
 
           {/* Imágenes */}
           <Card>
@@ -577,7 +663,7 @@ const CreatePropertyPage = () => {
                 Imágenes <span className={styles.required}>*</span>
               </h2>
               <p className={styles.cardSubtitle}>
-                Máximo 10 imágenes. Tamaño máximo: 5MB por imagen. Formatos:
+                Máximo 35 imágenes. Tamaño máximo: 5MB por imagen. Formatos:
                 JPG, PNG, GIF, WEBP
               </p>
             </CardHeader>
@@ -598,11 +684,11 @@ const CreatePropertyPage = () => {
                   icon={<Upload size={20} />}
                   onClick={() => fileInputRef.current?.click()}
                   className={styles.uploadButton}
-                  disabled={images.length >= 10}
+                  disabled={images.length >= 35}
                 >
                   {images.length === 0
                     ? "Seleccionar imágenes"
-                    : `Agregar más imágenes (${images.length}/10)`}
+                    : `Agregar más imágenes (${images.length}/35)`}
                 </Button>
 
                 {images.length === 0 && (

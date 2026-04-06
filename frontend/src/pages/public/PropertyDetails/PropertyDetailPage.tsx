@@ -67,7 +67,11 @@ const PropertyDetailPage = () => {
     );
   }
 
-  const images = currentProperty.imagenes || [];
+  const images = [...(currentProperty.imagenes || [])].sort((a, b) => {
+    if (a.esPrincipal) return -1;
+    if (b.esPrincipal) return 1;
+    return a.orden - b.orden;
+  });
   const hasImages = images.length > 0;
 
   const tipoLabel = {
@@ -311,11 +315,16 @@ const PropertyDetailPage = () => {
             <Card className={styles.priceCard}>
               <CardBody>
                 <div className={styles.priceSection}>
-                  <div className={styles.priceLabel}></div>
+                  <div className={styles.priceLabel}>
+                    <span className={styles.currencyBadge}>
+                      {currentProperty.moneda || "ARS"}
+                    </span>
+                    Precio
+                  </div>
                   <div className={styles.priceValue}>
                     {formatPrice(
                       currentProperty.precio,
-                      currentProperty.moneda
+                      currentProperty.moneda,
                     )}
                   </div>
                   {currentProperty.expensas && (

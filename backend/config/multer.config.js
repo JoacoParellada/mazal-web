@@ -42,9 +42,9 @@ const fileFilter = (req, file, cb) => {
   } else {
     cb(
       new Error(
-        "Tipo de archivo no válido. Solo se permiten: JPG, PNG, GIF, WEBP"
+        "Tipo de archivo no válido. Solo se permiten: JPG, PNG, GIF, WEBP",
       ),
-      false
+      false,
     );
   }
 };
@@ -54,6 +54,10 @@ export const upload = multer({
   storage: storage,
   limits: {
     fileSize: 5 * 1024 * 1024, // Límite de 5MB por archivo
+    files: 35, // máximo 35 archivos
+    fields: 50, // máximo 50 campos de texto
+    parts: 100, // máximo 100 partes totales
+    fieldSize: 10 * 1024 * 1024,
   },
   fileFilter: fileFilter,
 });

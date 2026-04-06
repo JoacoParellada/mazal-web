@@ -48,6 +48,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--spacing-xl);
+  min-width: 0;
 }
 
 .rightColumn {
@@ -367,7 +368,9 @@
 .description {
   color: var(--color-text-secondary);
   line-height: 1.8;
-  white-space: pre-line;
+  white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
   margin: 0;
 }
 
@@ -457,7 +460,17 @@
   align-items: center;
   gap: 6px;
 }
-
+.currencyBadge {
+  display: inline-block;
+  background-color: var(--color-primary, #2563eb);
+  color: white;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 4px;
+  margin-right: 8px;
+  letter-spacing: 0.05em;
+}
 /* Ajustes del icono del calendario dentro de infoValue */
 .additionalInfo .lucide-calendar,
 .additionalInfo svg {

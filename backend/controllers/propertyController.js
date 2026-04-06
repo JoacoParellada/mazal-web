@@ -127,12 +127,12 @@ export const crearPropiedad = asyncHandler(async (req, res) => {
       req.body.amenities = [];
     }
   }
-  // Procesar las imágenes subidas
+
   if (req.files && req.files.length > 0) {
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     const imagenes = req.files.map((file, index) => ({
       url: `${baseUrl}/uploads/propiedades/${file.filename}`,
-      filename: file.filename, // Guardar nombre del archivo para eliminarlo después
+      filename: file.filename,
       esPrincipal: index === 0, // La primera es principal
       orden: index + 1,
     }));
@@ -156,47 +156,72 @@ export const actualizarPropiedad = asyncHandler(async (req, res) => {
     _id: req.params.id,
     eliminado: false,
   });
+  if (!propiedad)
+    return res.status(404).json({ success: false, message: "No encontrada" });
 
-  if (!propiedad) {
-    return res.status(404).json({
-      success: false,
-      message: "Propiedad no encontrada",
-    });
-  }
-
-  // Ya no necesitamos verificar el rol porque protect ya lo hace
-
-  // Si se suben nuevas imágenes
-  if (req.files && req.files.length > 0) {
-    // Eliminar imágenes antiguas del sistema de archivos
-    if (propiedad.imagenes && propiedad.imagenes.length > 0) {
-      const oldFilenames = propiedad.imagenes
-        .map((img) => img.filename)
-        .filter(Boolean);
-      deleteMultipleFiles(oldFilenames);
+  // Parsear
+  let amenities = [];
+  if (req.body.amenities) {
+    try {
+      amenities =
+        typeof req.body.amenities === "string"
+          ? JSON.parse(req.body.amenities)
+          : req.body.amenities;
+    } catch (e) {
+      console.error("Error amenities:", e);
     }
-
-    // Agregar nuevas imágenes
-    const baseUrl = `${req.protocol}://${req.get("host")}`;
-    const imagenes = req.files.map((file, index) => ({
-      url: `${baseUrl}/uploads/propiedades/${file.filename}`,
-      filename: file.filename,
-      esPrincipal: index === 0,
-      orden: index + 1,
-    }));
-    req.body.imagenes = imagenes;
   }
 
-  propiedad = await Property.findByIdAndUpdate(req.params.id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+  let imagenesExistentes = [];
+  if (req.body.imagenesExistentes) {
+    try {
+      imagenesExistentes =
+        typeof req.body.imagenesExistentes === "string"
+          ? JSON.parse(req.body.imagenesExistentes)
+          : req.body.imagenesExistentes;
+    } catch (e) {
+      console.error("Error imagenesExistentes:", e);
+    }
+  }
 
-  res.json({
-    success: true,
-    message: "Propiedad actualizada exitosamente",
-    data: propiedad,
-  });
+  // Obtener archivos
+  const archivosNuevos =
+    req.files && req.files.imagenes ? req.files.imagenes : [];
+
+  // Limpieza de archivos
+  const filenamesAConservar = imagenesExistentes
+    .map((img) => img.filename)
+    .filter(Boolean);
+  const filenamesAEliminar = propiedad.imagenes
+    .map((img) => img.filename)
+    .filter((fn) => fn && !filenamesAConservar.includes(fn));
+
+  if (filenamesAEliminar.length > 0) {
+    deleteMultipleFiles(filenamesAEliminar);
+  }
+
+  // Unir fotos
+  const baseUrl = `${req.protocol}://${req.get("host")}`;
+  const imagenesNuevas = archivosNuevos.map((file, index) => ({
+    url: `${baseUrl}/uploads/propiedades/${file.filename}`,
+    filename: file.filename,
+    esPrincipal: false,
+    orden: imagenesExistentes.length + index + 1,
+  }));
+
+  req.body.imagenes = [...imagenesExistentes, ...imagenesNuevas];
+  req.body.amenities = amenities;
+
+  delete req.body.imagenesExistentes;
+
+  // Update
+  const propiedadActualizada = await Property.findByIdAndUpdate(
+    req.params.id,
+    { $set: req.body },
+    { new: true, runValidators: true },
+  );
+
+  res.json({ success: true, data: propiedadActualizada });
 });
 
 // @desc    Eliminar propiedad

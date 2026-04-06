@@ -79,33 +79,13 @@ const DashboardPage = () => {
       color: "#10b981",
       link: "/admin/propiedades?estado=disponible",
     },
-    {
-      title: "Vendidas",
-      value: stats?.vendidas || 0,
-      icon: <DollarSign size={32} />,
-      color: "#f59e0b",
-      link: "/admin/propiedades?estado=vendida",
-    },
-    {
-      title: "Alquiladas",
-      value: stats?.alquiladas || 0,
-      icon: <Home size={32} />,
-      color: "#06b6d4",
-      link: "/admin/propiedades?estado=alquilada",
-    },
+
     {
       title: "Usuarios",
       value: totalUsers,
       icon: <Users size={32} />,
       color: "#8b5cf6",
       link: "/admin/usuarios",
-    },
-    {
-      title: "Precio Promedio",
-      value: `$${Math.round(stats?.precioPromedio || 0).toLocaleString("es-AR")}`,
-      icon: <DollarSign size={32} />,
-      color: "#14b8a6",
-      link: "/admin/propiedades",
     },
   ];
 
@@ -130,9 +110,7 @@ const DashboardPage = () => {
         <div className={styles.header}>
           <div>
             <h1 className={styles.title}>Dashboard</h1>
-            <p className={styles.subtitle}>
-              Resumen general de la inmobiliaria
-            </p>
+            <p className={styles.subtitle}>Resumen general de Mazal</p>
           </div>
           <Link to="/admin/propiedades/nueva">
             <Button variant="primary" icon={<Plus size={20} />}>

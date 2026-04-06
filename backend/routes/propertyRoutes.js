@@ -51,15 +51,19 @@ const validacionPropiedad = [
     .withMessage("La provincia es obligatoria"),
 ];
 
-// Rutas públicas (estáticas primero)
+// =============================================
+// RUTAS ESTÁTICAS PÚBLICAS (sin autenticación)
+// =============================================
 router.get("/destacadas", obtenerDestacadas);
 router.get("/", obtenerPropiedades);
 
-// Rutas privadas (estáticas antes que dinámicas)
+// =============================================
+// RUTAS ESTÁTICAS PRIVADAS
+// =============================================
 router.get(
   "/admin/todas",
   protect,
-  authorize("agente", "supervisor", "admin"),
+  authorize("admin"),
   obtenerPropiedadesAdmin,
 );
 
@@ -70,24 +74,27 @@ router.get(
   obtenerEstadisticas,
 );
 
-// Rutas privadas
-router.use(protect); // Todas las rutas siguientes requieren autenticación
-
 router.post(
   "/",
   protect,
   authorize("agente", "supervisor", "admin"),
-  upload.array("imagenes", 10),
+  upload.fields([{ name: "imagenes", maxCount: 35 }]),
   validacionPropiedad,
   validateRequest,
   crearPropiedad,
 );
 
+// =============================================
+// RUTAS DINÁMICAS (/:id)
+// rutas estáticas como "admin" o "stats"
+// =============================================
+router.get("/:id", obtenerPropiedad);
+
 router.put(
   "/:id",
   protect,
   authorize("agente", "supervisor", "admin"),
-  upload.array("imagenes", 10),
+  upload.fields([{ name: "imagenes", maxCount: 35 }]),
   actualizarPropiedad,
 );
 
@@ -114,11 +121,9 @@ router.put(
 
 router.put(
   "/:id/destacar",
+  protect,
   authorize("supervisor", "admin"),
   destacarPropiedad,
 );
-
-// Ruta pública dinámica
-router.get("/:id", obtenerPropiedad);
 
 export default router;

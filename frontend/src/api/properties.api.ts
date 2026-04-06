@@ -39,7 +39,6 @@ export const propertiesAPI = {
     return response.data;
   },
 
-  // Nuevo método para obtener TODAS las propiedades en el admin
   getAllAdmin: async (
     filters?: PropertyFilters,
   ): Promise<PropertiesResponse> => {
@@ -70,10 +69,8 @@ export const propertiesAPI = {
   },
 
   create: async (data: PropertyFormData): Promise<PropertyResponse> => {
-    // Crear FormData para enviar archivos
     const formData = new FormData();
 
-    // Agregar campos de texto
     formData.append("titulo", data.titulo);
     formData.append("descripcion", data.descripcion);
     formData.append("tipo", data.tipo);
@@ -81,14 +78,12 @@ export const propertiesAPI = {
     formData.append("precio", data.precio.toString());
     formData.append("moneda", data.moneda || "ARS");
 
-    // Dirección
     if (data.direccion) {
       Object.entries(data.direccion).forEach(([key, value]) => {
         if (value) formData.append(`direccion[${key}]`, value);
       });
     }
 
-    // Superficie
     if (data.superficie?.total) {
       formData.append("superficie[total]", data.superficie.total.toString());
     }
@@ -99,7 +94,6 @@ export const propertiesAPI = {
       );
     }
 
-    // Características numéricas
     if (data.ambientes) formData.append("ambientes", data.ambientes.toString());
     if (data.dormitorios)
       formData.append("dormitorios", data.dormitorios.toString());
@@ -111,7 +105,6 @@ export const propertiesAPI = {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 
-    // Imágenes (archivos)
     if (data.imagenes && data.imagenes.length > 0) {
       data.imagenes.forEach((imagen) => {
         if (imagen instanceof File) {
@@ -120,14 +113,11 @@ export const propertiesAPI = {
       });
     }
 
-    // Destacada y visible
     formData.append("destacada", String(data.destacada || false));
     formData.append("visible", String(data.visible !== false));
 
     const response = await axiosInstance.post("/api/propiedades", formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
+      headers: { "Content-Type": "multipart/form-data" },
     });
     return response.data;
   },
@@ -136,10 +126,9 @@ export const propertiesAPI = {
     id: string,
     data: Partial<PropertyFormData>,
   ): Promise<PropertyResponse> => {
-    // Crear FormData para enviar archivos
     const formData = new FormData();
 
-    // Solo agregar campos que existen
+    // Campos de texto
     if (data.titulo) formData.append("titulo", data.titulo);
     if (data.descripcion) formData.append("descripcion", data.descripcion);
     if (data.tipo) formData.append("tipo", data.tipo);
@@ -182,7 +171,14 @@ export const propertiesAPI = {
       formData.append("amenities", JSON.stringify(data.amenities));
     }
 
-    // Imágenes nuevas (archivos)
+    if (data.imagenesExistentes) {
+      formData.append(
+        "imagenesExistentes",
+        JSON.stringify(data.imagenesExistentes),
+      );
+    }
+
+    // Imágenes nuevas
     if (data.imagenes && data.imagenes.length > 0) {
       data.imagenes.forEach((imagen) => {
         if (imagen instanceof File) {
@@ -191,7 +187,7 @@ export const propertiesAPI = {
       });
     }
 
-    // Destacada y visible
+    // Configuración
     if (data.destacada !== undefined)
       formData.append("destacada", String(data.destacada));
     if (data.visible !== undefined)
@@ -201,9 +197,7 @@ export const propertiesAPI = {
       `/api/propiedades/${id}`,
       formData,
       {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+        headers: { "Content-Type": "multipart/form-data" },
       },
     );
     return response.data;
