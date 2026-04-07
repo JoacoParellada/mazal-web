@@ -25,6 +25,7 @@ import { usePropertiesStore } from "@store/propertiesStore";
 import { formatPrice, formatDate } from "@utils/formatters";
 import { toast } from "react-toastify";
 import styles from "./PropertyDetailPage.module.css";
+import PropertyMap from "@/components/common/PropertyMap/PropertyMap";
 
 const PropertyDetailPage = () => {
   const { id } = useParams<{ id: string }>();
@@ -238,29 +239,52 @@ const PropertyDetailPage = () => {
               </CardHeader>
               <CardBody>
                 <div className={styles.locationInfo}>
-                  <MapPin size={20} className={styles.locationIcon} />
-                  <div>
-                    <p className={styles.locationText}>
-                      {currentProperty.direccion.calle &&
-                        `${currentProperty.direccion.calle} `}
-                      {currentProperty.direccion.numero &&
-                        `${currentProperty.direccion.numero}, `}
-                      {currentProperty.direccion.piso &&
-                        `Piso ${currentProperty.direccion.piso} `}
-                      {currentProperty.direccion.departamento &&
-                        `${currentProperty.direccion.departamento}, `}
-                    </p>
-                    <p className={styles.locationText}>
-                      {currentProperty.direccion.barrio &&
-                        `${currentProperty.direccion.barrio}, `}
-                      {currentProperty.direccion.ciudad},{" "}
-                      {currentProperty.direccion.provincia}
-                    </p>
-                    {currentProperty.direccion.codigoPostal && (
+                  {/* Dirección en texto */}
+                  <div className={styles.locationAddress}>
+                    <MapPin size={20} className={styles.locationIcon} />
+                    <div>
                       <p className={styles.locationText}>
-                        CP: {currentProperty.direccion.codigoPostal}
+                        {currentProperty.direccion.calle &&
+                          `${currentProperty.direccion.calle} `}
+                        {currentProperty.direccion.numero &&
+                          `${currentProperty.direccion.numero}, `}
+                        {currentProperty.direccion.piso &&
+                          `Piso ${currentProperty.direccion.piso} `}
+                        {currentProperty.direccion.departamento &&
+                          `${currentProperty.direccion.departamento}, `}
                       </p>
-                    )}
+                      <p className={styles.locationText}>
+                        {currentProperty.direccion.barrio &&
+                          `${currentProperty.direccion.barrio}, `}
+                        {currentProperty.direccion.ciudad},{" "}
+                        {currentProperty.direccion.provincia}
+                      </p>
+                      {currentProperty.direccion.codigoPostal && (
+                        <p className={styles.locationText}>
+                          CP: {currentProperty.direccion.codigoPostal}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Mapa */}
+                  <div className={styles.mapWrapper}>
+                    <iframe
+                      title={`Ubicación de ${currentProperty.titulo}`}
+                      src={`https://maps.google.com/maps?q=${encodeURIComponent(
+                        [
+                          currentProperty.direccion.calle,
+                          currentProperty.direccion.numero,
+                          currentProperty.direccion.ciudad,
+                          currentProperty.direccion.provincia,
+                          "Argentina",
+                        ]
+                          .filter(Boolean)
+                          .join(", "),
+                      )}&output=embed&z=15`}
+                      loading="lazy"
+                      referrerPolicy="no-referrer-when-downgrade"
+                    />
                   </div>
                 </div>
               </CardBody>
