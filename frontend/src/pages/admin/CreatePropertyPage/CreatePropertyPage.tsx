@@ -15,6 +15,7 @@ import {
   OPERATION_TYPES,
   CURRENCIES,
   PROVINCES,
+  getLocalidades,
 } from "@utils/constants";
 import { toast } from "react-toastify";
 import styles from "./CreatePropertyPage.module.css";
@@ -97,6 +98,10 @@ const CreatePropertyPage = () => {
       visible: true,
     },
   });
+
+  const provinciaSeleccionada = watch("direccion.provincia");
+
+  const localidades = getLocalidades(provinciaSeleccionada || "");
 
   const tipoSeleccionado = watch("tipo") || "";
   const fieldsConfig = getFieldsConfig(tipoSeleccionado);
@@ -461,12 +466,42 @@ const CreatePropertyPage = () => {
                   <Input label="Barrio" {...register("direccion.barrio")} />
                 </div>
                 <div>
-                  <Input
-                    label="Ciudad"
-                    {...register("direccion.ciudad")}
-                    error={errors.direccion?.ciudad?.message}
-                    required
-                  />
+                  <div>
+                    <label className={styles.label}>
+                      Localidad / Departamento{" "}
+                      <span className={styles.required}>*</span>
+                    </label>
+                    {localidades.length > 0 ? (
+                      <select
+                        className={styles.select}
+                        {...register("direccion.ciudad")}
+                      >
+                        <option value="">Seleccionar localidad</option>
+                        {localidades.map((loc) => (
+                          <option key={loc} value={loc}>
+                            {loc}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <Input
+                        label=""
+                        placeholder={
+                          provinciaSeleccionada
+                            ? "Ingresá la localidad"
+                            : "Primero seleccioná una provincia"
+                        }
+                        {...register("direccion.ciudad")}
+                        error={errors.direccion?.ciudad?.message}
+                        disabled={!provinciaSeleccionada}
+                      />
+                    )}
+                    {errors.direccion?.ciudad && (
+                      <span className={styles.error}>
+                        {errors.direccion.ciudad.message}
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div>
                   <label className={styles.label}>

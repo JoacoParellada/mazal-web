@@ -38,14 +38,14 @@ const propertySchema = new mongoose.Schema(
       },
     },
     direccion: {
-      calle: { type: String, trim: true },
-      numero: { type: String, trim: true },
+      calle: { type: String, required: true, trim: true },
+      numero: { type: String, required: true, trim: true },
       piso: { type: String, trim: true },
       departamento: { type: String, trim: true },
       barrio: { type: String, trim: true },
       ciudad: { type: String, required: true, trim: true },
       provincia: { type: String, required: true, trim: true },
-      codigoPostal: { type: String, trim: true },
+      codigoPostal: { type: String, required: true, trim: true },
       ubicacion: { type: String, trim: true },
     },
     superficie: {
